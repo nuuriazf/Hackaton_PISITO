@@ -1,12 +1,12 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { isApiError } from "../../api/client";
-import { createEntry } from "../../api/resources";
+import { createEntry, fetchEntries } from "../../api/resources";
 import { validatePassword, validateUsername } from "../../features/auth/formValidation";
 import { useI18n } from "../../i18n/I18nProvider";
 import type { AppLanguage, I18nKey } from "../../i18n/messages";
 import type { UpdatePasswordInput, UpdateUsernameInput } from "../../types/auth";
-import type { CreateEntryResourceInput } from "../../types/resource";
+import type { CreateEntryResourceInput, EntryItem, EntryFlag } from "../../types/resource";
 import { readErrorMessage } from "../../utils/error";
 import {
   Cog6ToothIcon,
@@ -28,6 +28,7 @@ import {
 import { ProfileLogoutButton } from "./profile/ProfileLogoutButton";
 import { ProfilePasswordForm } from "./profile/ProfilePasswordForm";
 import { ProfileUsernameForm } from "./profile/ProfileUsernameForm";
+import { StorageEntriesSection } from "./storage/StorageEntriesSection";
 
 type ContentInboxProps = {
   username: string;
@@ -54,6 +55,28 @@ const footerButtonBaseClass =
   "flex h-full flex-1 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70";
 
 const LANGUAGE_OPTIONS: AppLanguage[] = ["es", "en", "fr", "gl"];
+
+function resolveEntryFlag(form: InboxEntryFormValues): EntryFlag {
+  switch (form.selectedPrimaryOption) {
+    case "youtube":
+      return "YOUTUBE";
+    case "spotify":
+      return "SPOTIFY";
+    case "twitch":
+      return "TWITCH";
+    case "link":
+      return "LINK";
+    case "table":
+      return "TABLE";
+    case "enumeration":
+      return "ENUMERATION";
+    case "checklist":
+      return "CHECKLIST";
+    case "survey":
+    default:
+      return "RAW";
+  }
+}
 
 function footerButtonClass(active: boolean, withRightBorder: boolean) {
   return [
@@ -129,6 +152,10 @@ export function ContentInbox({
   const [inboxSubmitting, setInboxSubmitting] = useState(false);
   const [inboxError, setInboxError] = useState<string | null>(null);
   const [inboxMessage, setInboxMessage] = useState<string | null>(null);
+  const [storageEntries, setStorageEntries] = useState<EntryItem[]>([]);
+  const [storageLoading, setStorageLoading] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [storageSearchValue, setStorageSearchValue] = useState("");
 
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameCurrentPassword, setUsernameCurrentPassword] = useState("");
@@ -152,6 +179,31 @@ export function ContentInbox({
   useEffect(() => {
     setActiveSection(sectionFromPath(location.pathname));
   }, [location.pathname]);
+
+  const loadStorageEntries = useCallback(async () => {
+    try {
+      setStorageLoading(true);
+      setStorageError(null);
+
+      const data = await fetchEntries();
+      setStorageEntries(data);
+    } catch (requestError) {
+      if (isApiError(requestError) && requestError.status === 401) {
+        onLogout();
+        return;
+      }
+      setStorageError(readErrorMessage(requestError, t("common.unexpectedError")));
+    } finally {
+      setStorageLoading(false);
+    }
+  }, [onLogout, t]);
+
+  useEffect(() => {
+    if (activeSection !== "storage") {
+      return;
+    }
+    void loadStorageEntries();
+  }, [activeSection, loadStorageEntries]);
 
   useEffect(() => {
     if (!settingsOpen && !notificationsOpen) {
@@ -228,7 +280,7 @@ export function ContentInbox({
     const textContent = inboxEntryForm.textContent.trim();
     if (textContent) {
       resources.push({
-        type: "TEXT",
+        type: "RAW",
         textContent
       });
     }
@@ -247,13 +299,25 @@ export function ContentInbox({
     try {
       setInboxSubmitting(true);
       resetInboxFeedback();
+      const activeFlag = resolveEntryFlag(inboxEntryForm);
 
-      await createEntry({
-        title,
+      const createdEntry = await createEntry({
+        title: title || undefined,
         resources,
-        flag: inboxEntryForm.selectedPrimaryOption === "spotify" ? "SPOTIFY" : inboxEntryForm.selectedPrimaryOption === "youtube" ? "YOUTUBE" : "TEXT",
+        flag: activeFlag,
         notification: inboxEntryForm.alarmEnabled
       });
+      console.log("[createEntry] payload", {
+        title: title || undefined,
+        resources,
+        flag: activeFlag,
+        notification: inboxEntryForm.alarmEnabled
+      });
+      console.log("[createEntry] response", createdEntry);
+      console.log(
+        "[createEntry] link resources",
+        createdEntry.resources?.filter((resource) => resource.type === "LINK")
+      );
 
       setInboxEntryForm(INITIAL_INBOX_ENTRY_FORM);
       setInboxMessage(t("inbox.saved"));
@@ -514,7 +578,7 @@ export function ContentInbox({
                     </h2>
                     <button
                       type="button"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-brand-200 text-ink-700 transition hover:bg-brand-100"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
                       aria-label={t("profile.hideChangeUsernameAria")}
                       onClick={closeProfileForm}
                     >
@@ -558,7 +622,7 @@ export function ContentInbox({
                     </h2>
                     <button
                       type="button"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-brand-200 text-ink-700 transition hover:bg-brand-100"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
                       aria-label={t("profile.hideChangePasswordAria")}
                       onClick={closeProfileForm}
                     >
@@ -606,6 +670,16 @@ export function ContentInbox({
               heading="Inbox"
               onSubmit={handleCreateInboxEntry}
               onChange={patchInboxEntryForm}
+            />
+          ) : activeSection === "storage" ? (
+            <StorageEntriesSection
+              entries={storageEntries}
+              loading={storageLoading}
+              error={storageError}
+              searchValue={storageSearchValue}
+              onSearchChange={setStorageSearchValue}
+              onEntriesUpdated={loadStorageEntries}
+              onUnauthorized={onLogout}
             />
           ) : (
             <section className="rounded-card border border-brand-200 bg-white/95 p-8 text-center shadow-card md:p-10">

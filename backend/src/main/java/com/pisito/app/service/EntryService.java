@@ -8,6 +8,7 @@ import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateMediaResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.resource.ResourceResponse;
+import com.pisito.app.controller.dto.resource.UpdateTextResourceRequest;
 import com.pisito.app.controller.dto.tag.TagResponse;
 import com.pisito.app.model.User;
 import com.pisito.app.model.Entry;
@@ -21,18 +22,20 @@ import com.pisito.app.repository.EntryRepository;
 import com.pisito.app.repository.ResourceRepository;
 import com.pisito.app.repository.TagRepository;
 import com.pisito.app.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class EntryService {
+
+    private static final Logger log = LoggerFactory.getLogger(EntryService.class);
 
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
@@ -62,7 +65,7 @@ public class EntryService {
 
     @Transactional(readOnly = true)
     public List<EntryResponse> findAll(Long userId) {
-        return entryRepository.findAllByOwnerIdOrderByCreatedAtDesc(userId).stream()
+        return entryRepository.findAllByUserIdOrderByCreateDateDesc(userId).stream()
             .map(this::toEntryResponse)
             .toList();
     }
@@ -74,46 +77,61 @@ public class EntryService {
 
     @Transactional
     public EntryResponse createEntry(Long userId, CreateNoteRequest request) {
-        String title = trimOrNull(request.getTitle());
+        User user = getUserOrThrow(userId);
 
         Entry entry = new Entry();
-        entry.setOwner(getUserOrThrow(userId));
+        entry.setUser(user);
+        entry.setFlag(request.getFlag() != null ? request.getFlag() : FlagEnum.RAW);
 
-        TextResource firstTextResource = null;
-        if (request.getResources() != null) {
-            for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
-                Resource resource = buildResource(resourceRequest);
-                entry.addResource(resource);
-
-                if (firstTextResource == null
-                    && resource instanceof TextResource tr
-                    && StringUtils.hasText(tr.getTextContent())) {
-                    firstTextResource = tr;
+        String firstTextContent = null;
+        StringBuilder allTextContent = new StringBuilder();
+        for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
+            Resource resource = buildResource(resourceRequest);
+            entry.addResource(resource);
+            if (firstTextContent == null
+                && resource instanceof TextResource textResource
+                && StringUtils.hasText(textResource.getTextContent())) {
+                firstTextContent = textResource.getTextContent().trim();
+            }
+            if (resource instanceof TextResource textResource
+                && StringUtils.hasText(textResource.getTextContent())) {
+                if (!allTextContent.isEmpty()) {
+                    allTextContent.append('\n');
                 }
+                allTextContent.append(textResource.getTextContent().trim());
             }
         }
 
-        String firstText = firstTextResource != null ? firstTextResource.getTextContent().trim() : "";
-        String flagValue = request.getFlag() != null ? request.getFlag().name() : "";
-        String baseContext =
-            (StringUtils.hasText(flagValue) ? ("FLAG=" + flagValue + "\n") : "") +
-            (StringUtils.hasText(firstText) ? firstText : "");
-
+        String title = trimOrNull(request.getTitle());
+        if (!StringUtils.hasText(title) && StringUtils.hasText(firstTextContent)) {
+            try {
+                title = ollamaTitleService.generateTitle(firstTextContent);
+            } catch (ResponseStatusException ignored) {
+                title = firstTextContent.length() > 120 ? firstTextContent.substring(0, 120).trim() : firstTextContent;
+            }
+        }
         if (!StringUtils.hasText(title)) {
-            title = ollamaTitleService.generateTitle(baseContext);
+            title = "Nueva entrada";
         }
         entry.setTitle(trimRequired(title, "title is required"));
 
         if (request.getNotification()) {
-            entry.setNotificationDate(ollamaTitleService.extractNotificationDate(baseContext).orElse(null));
+            String notificationContext = allTextContent.isEmpty() ? title : allTextContent.toString();
+            entry.setNotificationDate(ollamaTitleService.extractNotificationDate(notificationContext).orElse(null));
+            log.info("createEntry extracted notificationDate={}", entry.getNotificationDate());
         } else {
+            log.info("createEntry notification=false userId={} flag={}", userId, entry.getFlag());
             entry.setNotificationDate(null);
         }
 
-        if (request.getFlag() == FlagEnum.SPOTIFY && StringUtils.hasText(firstText)) {
-            spotifySongLinkService.findSongLinkForNote(firstText).ifPresent(link -> {
+        String spotifyContext = allTextContent.toString().trim();
+        if (!StringUtils.hasText(spotifyContext)) {
+            spotifyContext = title;
+        }
+        if (request.getFlag() == FlagEnum.SPOTIFY && StringUtils.hasText(spotifyContext)) {
+            spotifySongLinkService.findSongLinkForSpotifyFlag(spotifyContext).ifPresent(link -> {
                 LinkResource songLink = new LinkResource();
-                songLink.setTitle("Cancion sugerida");
+                songLink.setTitle("Cancion principal en Spotify");
                 songLink.setUrl(link);
                 entry.addResource(songLink);
             });
@@ -123,7 +141,7 @@ public class EntryService {
         List<Tag> allTags = tagRepository.findAll();
         List<String> existingTagNames = allTags.stream().map(Tag::getName).toList();
         
-        String contentForTags = entry.getTitle() + "\n" + baseContext;
+        String contentForTags = entry.getTitle() + "\n" + allTextContent;
         List<String> suggestedTagNames = ollamaTagsService.suggestTags(contentForTags, existingTagNames);
         
         for (String tagName : suggestedTagNames) {
@@ -135,7 +153,6 @@ public class EntryService {
                 });
             entry.addTag(tag);
         }
-
         return toEntryResponse(entryRepository.save(entry));
     }
 
@@ -174,12 +191,37 @@ public class EntryService {
     }
 
     @Transactional
-    public void deleteResource(Long userId, Long entryId, Long resourceId) {
+    public ResourceResponse updateTextResource(
+        Long userId,
+        Long entryId,
+        Long resourceId,
+        UpdateTextResourceRequest request
+    ) {
         Resource resource = getResourceOrThrow(resourceId);
         Entry parent = resource.getEntry();
-        if (!parent.getId().equals(entryId) || !parent.getOwner().getId().equals(userId)) {
+
+        if (!parent.getId().equals(entryId) || !parent.getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
+
+        if (!(resource instanceof TextResource textResource)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resource is not TEXT");
+        }
+
+        textResource.setTitle(trimOrNull(request.getTitle()));
+        textResource.setTextContent(trimRequired(request.getTextContent(), "textContent is required"));
+        parent.touch();
+
+        return toResourceResponse(textResource);
+    }
+
+    @Transactional
+    public void deleteResource(Long userId, Long entryId, Long resourceId) {
+        Resource resource = getResourceOrThrow(resourceId);
+        if (!resource.getEntry().getId().equals(entryId) || !resource.getEntry().getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
+        }
+        Entry parent = resource.getEntry();
         parent.removeResource(resource);
     }
 
@@ -201,10 +243,10 @@ public class EntryService {
         }
 
         return switch (request.getType()) {
-            case TEXT -> {
+            case RAW -> {
                 TextResource resource = new TextResource();
                 resource.setTitle(trimOrNull(request.getTitle()));
-                resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required for TEXT"));
+                resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required for RAW"));
                 yield resource;
             }
             case LINK -> {
@@ -225,7 +267,7 @@ public class EntryService {
     }
 
     private Entry getEntryOrThrow(Long userId, Long entryId) {
-        return entryRepository.findByIdAndOwnerId(entryId, userId)
+        return entryRepository.findByIdAndUserId(entryId, userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
     }
 
@@ -253,8 +295,8 @@ public class EntryService {
             entry.getTitle(),
             resources,
             tags,
-            entry.getCreatedAt(),
-            entry.getUpdatedAt()
+            entry.getCreateDate(),
+            entry.getUpdateDate()
         );
     }
 

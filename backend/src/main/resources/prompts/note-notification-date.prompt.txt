@@ -1,16 +1,53 @@
-Eres un asistente que extrae una fecha/hora de notificacion desde una nota.
+Tarea: extraer UNA fecha/hora de notificacion desde una nota en espanol.
 
-Reglas estrictas:
-- Devuelve SOLO uno de estos resultados:
-1) Un datetime ISO-8601 valido.
-2) La palabra exacta: NONE
-- No devuelvas texto extra, explicaciones ni comillas.
-- Usa como referencia temporal NOW y zona Europe/Madrid.
-- Si en la nota hay una fecha/hora clara, conviertela a ISO-8601.
-- Si no hay indicio temporal suficiente, devuelve NONE.
+SALIDA OBLIGATORIA:
+- Devuelve SOLO una linea:
+  1) un datetime ISO-8601 con offset (ej: 2026-04-20T21:00:00+02:00), o
+  2) EXACTAMENTE: NONE
+- Sin explicaciones, sin comillas, sin texto adicional.
 
-NOW:
-{{NOW_ISO}}
+Contexto:
+- NOW (Europe/Madrid): {{NOW_ISO}}
+- Calcula ano/mes/dia y offset real (+01:00 / +02:00) en base a NOW y la fecha resultante.
 
-Contenido de la nota:
+PRIORIDAD DE EXTRACCION (de mayor a menor):
+1) Fecha + hora explicitas (ej: "20/04 a las 18:30", "el 20 de abril a las 7").
+2) Fecha explicita sin hora (usar 09:00:00).
+3) Dia relativo: hoy, manana, pasado manana.
+4) Dia de semana: lunes, martes, miercoles, jueves, viernes, sabado, domingo.
+5) Hora suelta sin fecha (usar hoy si aun no paso; si ya paso, manana).
+6) Contexto semantico de franja (cena, comida, etc.).
+7) NONE solo como ULTIMO recurso cuando no exista ninguna pista temporal util.
+
+Reglas concretas:
+- Si hay varias pistas temporales, elige la primera instruccion temporal clara.
+- "dia/mes" sin ano -> proxima fecha futura valida respecto a NOW.
+- Dias de semana:
+  - "martes", "para martes", "el martes", "proximo martes", "martes que viene" => proximo martes futuro.
+  - "este martes" => si no paso todavia, ese martes; si ya paso, el siguiente.
+- Mes:
+   - A no ser que se especifique el mes (Enero, febrero, marzo, ...), solo busca el siguiente día que corresponda del siguiente mes
+- Relativos:
+  - hoy -> fecha de NOW
+  - manana -> NOW + 1 dia
+  - pasado manana -> NOW + 2 dias
+- Si falta hora:
+  - por defecto 09:00:00
+  - pero si el contexto sugiere franja, usar:
+    - desayuno: 08:00:00
+    - comida/almuerzo: 14:00:00
+    - cafe: 17:00:00
+    - tarde: 17:00:00
+    - cena/noche: 21:00:00
+    - dormir/acostarse: 23:00:00
+
+Ejemplos:
+- Martes que viene -> coger el tiempo actual -> calcular cuantos dias faltan -> aplicar offset al now
+- El viernes 28 -> si este mes es mas tarde que 28, se refiere al 28 del mes + 1
+
+Importante:
+- Debes INTENTAR extraer fecha/hora siempre que haya cualquier pista temporal.
+- Usa NONE unicamente si no hay fecha, ni dia, ni hora, ni relativo, ni dia de semana.
+
+NOTA:
 {{NOTE_CONTENT}}

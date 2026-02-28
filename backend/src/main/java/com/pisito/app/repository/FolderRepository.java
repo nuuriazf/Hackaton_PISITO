@@ -1,0 +1,16 @@
+package com.pisito.app.repository;
+
+import com.pisito.app.model.Folder;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface FolderRepository extends JpaRepository<Folder, Long> {
+
+    List<Folder> findAllByOwnerIdOrderByTitleAsc(Long ownerId);
+
+    Optional<Folder> findByIdAndOwnerId(Long id, Long ownerId);
+
+    boolean existsByOwnerIdAndTitleIgnoreCase(Long ownerId, String title);
+}

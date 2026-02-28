@@ -1,4 +1,13 @@
-export type ResourceType = "TEXT" | "LINK" | "MEDIA";
+export type ResourceType = "RAW" | "LINK" | "MEDIA";
+export type EntryFlag =
+  | "RAW"
+  | "YOUTUBE"
+  | "LINK"
+  | "SPOTIFY"
+  | "TWITCH"
+  | "TABLE"
+  | "ENUMERATION"
+  | "CHECKLIST";
 
 export type ResourceItem = {
   id: number;
@@ -20,6 +29,17 @@ export type EntryItem = {
   updatedAt: string;
 };
 
+export type FolderItem = {
+  id: number;
+  title: string;
+};
+
+export type EntryFolderItem = {
+  id: number;
+  title: string;
+  selected: boolean;
+};
+
 export type CreateEntryResourceInput = {
   type: ResourceType;
   title?: string;
@@ -31,11 +51,10 @@ export type CreateEntryResourceInput = {
 };
 
 export type CreateEntryInput = {
-  title: string;
+  title?: string;
   resources?: CreateEntryResourceInput[];
-  flag?: "TEXT" | "SPOTIFY" | "YOUTUBE";
+  flag?: EntryFlag;
   notification?: boolean;
-  tagIds?: number[];
 };
 
 export type CreateTextResourceInput = {

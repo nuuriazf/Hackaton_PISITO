@@ -26,12 +26,12 @@ server:
 
 ollama:
   base-url: http://localhost:11434
-  model: qwen2.5:7b
+  model: llama3.1:8b
 spotify:
   api-base-url: https://api.spotify.com/v1
   auth-base-url: https://accounts.spotify.com
-  client-id: 
-  client-secret: 
+  client-id: ${SPOTIFY_CLIENT_ID:23f5df62147c459b9c6a47a9c6a33d6f}
+  client-secret: ${SPOTIFY_CLIENT_SECRET:e316d0caf66b4f1daee11da8654f3e3e}
 app:
   upload:
     dir: uploads

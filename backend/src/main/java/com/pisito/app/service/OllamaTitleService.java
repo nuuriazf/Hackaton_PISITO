@@ -1,12 +1,11 @@
 package com.pisito.app.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
@@ -16,143 +15,109 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
-import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @Service
 public class OllamaTitleService {
 
-    private static final int FALLBACK_TITLE_LENGTH = 120;
+    private static final int MAX_TITLE_LENGTH = 120;
+    private static final ZoneId MADRID_ZONE = ZoneId.of("Europe/Madrid");
+    private static final Logger log = LoggerFactory.getLogger(OllamaTitleService.class);
 
-    private final RestClient restClient;
-    private final String model;
+    private final OllamaService ollamaService;
     private final Resource titlePromptTemplateResource;
     private final Resource notificationPromptTemplateResource;
 
     public OllamaTitleService(
-        RestClient.Builder restClientBuilder,
-        @Value("${ollama.base-url:http://localhost:11434}") String baseUrl,
-        @Value("${ollama.model:llama3.1}") String model,
+        OllamaService ollamaService,
         @Value("classpath:prompts/note-title.prompt.txt") Resource titlePromptTemplateResource,
         @Value("classpath:prompts/note-notification-date.prompt.txt") Resource notificationPromptTemplateResource
     ) {
-        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
-        this.model = model;
+        this.ollamaService = ollamaService;
         this.titlePromptTemplateResource = titlePromptTemplateResource;
         this.notificationPromptTemplateResource = notificationPromptTemplateResource;
     }
 
-    public String generateTitle(String noteContent) {
-        String trimmedContent = noteContent == null ? "" : noteContent.trim();
-        if (!StringUtils.hasText(trimmedContent)) {
+    public String generateTitle(String text) {
+        String trimmed = text == null ? "" : text.trim();
+        if (!StringUtils.hasText(trimmed)) {
             return "Nota sin contenido";
         }
 
-        String prompt = buildPrompt(trimmedContent);
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("model", model);
-        payload.put("prompt", prompt);
-        payload.put("stream", false);
-
-        JsonNode responseNode;
-        try {
-            responseNode = restClient.post()
-                .uri("/api/generate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(payload)
-                .retrieve()
-                .body(JsonNode.class);
-        } catch (Exception ex) {
-            throw new ResponseStatusException(
-                BAD_GATEWAY,
-                "No se pudo generar el titulo con Ollama",
-                ex
-            );
-        }
-
-        if (responseNode == null || !responseNode.hasNonNull("response")) {
-            throw new ResponseStatusException(BAD_GATEWAY, "Respuesta invalida de Ollama");
-        }
-
-        String generated = responseNode.path("response").asText("").trim();
-        if (!StringUtils.hasText(generated)) {
-            throw new ResponseStatusException(BAD_GATEWAY, "Ollama devolvio un titulo vacio");
-        }
-        return normalizeTitle(generated);
+        String prompt = buildTitlePrompt(trimmed);
+        String raw = ollamaService.generate(prompt);
+        return normalizeTitle(raw);
     }
 
-    private String buildPrompt(String noteContent) {
+    public Optional<Instant> extractNotificationDate(String noteContent) {
+        String trimmed = noteContent == null ? "" : noteContent.trim();
+        if (!StringUtils.hasText(trimmed)) {
+            return Optional.empty();
+        }
+
+        String prompt = buildNotificationPrompt(trimmed);
+        String raw;
+        try {
+            raw = ollamaService.generate(prompt);
+        } catch (Exception ignored) {
+            log.warn("extractNotificationDate failed calling Ollama", ignored);
+            return Optional.empty();
+        }
+
+        if (!StringUtils.hasText(raw)) {
+            log.info("extractNotificationDate empty raw response from Ollama");
+            return Optional.empty();
+        }
+        log.info("extractNotificationDate rawResponse={}", raw);
+
+        String cleaned = raw
+            .replace("\"", "")
+            .lines()
+            .findFirst()
+            .orElse("")
+            .trim();
+        log.info("extractNotificationDate cleanedResponse={}", cleaned);
+
+        if (!StringUtils.hasText(cleaned) || "NONE".equalsIgnoreCase(cleaned)) {
+            log.info("extractNotificationDate interpreted as NONE");
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(Instant.parse(cleaned));
+        } catch (DateTimeParseException ignored) {
+            log.debug("extractNotificationDate not an Instant: {}", cleaned);
+        }
+
+        try {
+            return Optional.of(OffsetDateTime.parse(cleaned).toInstant());
+        } catch (DateTimeParseException ignored) {
+            log.debug("extractNotificationDate not an OffsetDateTime: {}", cleaned);
+        }
+
+        try {
+            LocalDateTime dateTime = LocalDateTime.parse(cleaned);
+            return Optional.of(dateTime.atZone(MADRID_ZONE).toInstant());
+        } catch (DateTimeParseException ignored) {
+            log.debug("extractNotificationDate not a LocalDateTime: {}", cleaned);
+        }
+
+        log.info("extractNotificationDate no valid datetime parsed from response");
+        return Optional.empty();
+    }
+
+    private String buildTitlePrompt(String noteContent) {
         String template = loadPromptTemplate(titlePromptTemplateResource);
         return template.replace("{{NOTE_CONTENT}}", noteContent);
     }
 
-    public Optional<Instant> extractNotificationDate(String noteContent) {
-        String trimmedContent = noteContent == null ? "" : noteContent.trim();
-        if (!StringUtils.hasText(trimmedContent)) {
-            return Optional.empty();
-        }
-
+    private String buildNotificationPrompt(String noteContent) {
         String template = loadPromptTemplate(notificationPromptTemplateResource);
-        String prompt = template
-            .replace("{{NOW_ISO}}", OffsetDateTime.now(ZoneId.of("Europe/Madrid")).toString())
-            .replace("{{NOTE_CONTENT}}", trimmedContent);
-
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("model", model);
-        payload.put("prompt", prompt);
-        payload.put("stream", false);
-
-        try {
-            JsonNode responseNode = restClient.post()
-                .uri("/api/generate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(payload)
-                .retrieve()
-                .body(JsonNode.class);
-
-            if (responseNode == null || !responseNode.hasNonNull("response")) {
-                return Optional.empty();
-            }
-
-            String raw = responseNode.path("response").asText("").trim();
-            if (!StringUtils.hasText(raw)) {
-                return Optional.empty();
-            }
-            String cleaned = raw
-                .replace("\"", "")
-                .lines()
-                .findFirst()
-                .orElse("")
-                .trim();
-
-            if (!StringUtils.hasText(cleaned) || "NONE".equalsIgnoreCase(cleaned)) {
-                return Optional.empty();
-            }
-
-            try {
-                return Optional.of(Instant.parse(cleaned));
-            } catch (DateTimeParseException ignored) {
-            }
-
-            try {
-                return Optional.of(OffsetDateTime.parse(cleaned).toInstant());
-            } catch (DateTimeParseException ignored) {
-            }
-
-            try {
-                LocalDateTime dateTime = LocalDateTime.parse(cleaned);
-                return Optional.of(dateTime.atZone(ZoneId.of("Europe/Madrid")).toInstant());
-            } catch (DateTimeParseException ignored) {
-            }
-        } catch (Exception ignored) {
-            return Optional.empty();
-        }
-
-        return Optional.empty();
+        return template
+            .replace("{{NOW_ISO}}", OffsetDateTime.now(MADRID_ZONE).toString())
+            .replace("{{NOTE_CONTENT}}", noteContent);
     }
 
     private String loadPromptTemplate(Resource promptTemplateResource) {
@@ -161,7 +126,7 @@ public class OllamaTitleService {
         } catch (IOException ex) {
             throw new ResponseStatusException(
                 INTERNAL_SERVER_ERROR,
-                "No se pudo leer el prompt para generar titulos",
+                "No se pudo leer el prompt de Ollama",
                 ex
             );
         }
@@ -172,8 +137,11 @@ public class OllamaTitleService {
             .replace("\"", "")
             .replace("\n", " ")
             .trim();
-        if (sanitized.length() > FALLBACK_TITLE_LENGTH) {
-            return sanitized.substring(0, FALLBACK_TITLE_LENGTH).trim();
+        if (!StringUtils.hasText(sanitized)) {
+            return "Nueva entrada";
+        }
+        if (sanitized.length() > MAX_TITLE_LENGTH) {
+            return sanitized.substring(0, MAX_TITLE_LENGTH).trim();
         }
         return sanitized;
     }
