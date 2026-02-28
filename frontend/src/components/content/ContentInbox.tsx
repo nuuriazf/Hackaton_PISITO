@@ -233,10 +233,6 @@ export function ContentInbox({
 
   async function handleCreateInboxEntry() {
     const title = inboxEntryForm.title.trim();
-    if (!title) {
-      setInboxError(t("inbox.titleRequired"));
-      return;
-    }
 
     const resources: CreateEntryResourceInput[] = [];
     const textContent = inboxEntryForm.textContent.trim();

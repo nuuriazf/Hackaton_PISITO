@@ -13,6 +13,16 @@ mvn spring-boot:run
 
 ## Arranque con Supabase (Postgres)
 
+Configuracion de base de datos (Supabase/Postgres) en `src/main/resources/application.yml`.
+Se recomienda configurar credenciales por variables de entorno:
+
+- `SUPABASE_DB_URL`
+- `SUPABASE_DB_USER`
+- `SUPABASE_DB_PASSWORD`
+- `SPOTIFY_CLIENT_ID` (opcional, para buscar canciones reales en Spotify API)
+- `SPOTIFY_CLIENT_SECRET` (opcional)
+
+Ejemplo para Supabase (Session Pooler):
 PowerShell ejemplo:
 
 ```powershell
@@ -33,6 +43,8 @@ Auth:
 - `POST /api/auth/register` y `POST /api/auth/login` son publicos.
 - El resto de `/api/**` requiere `Authorization: Bearer <jwt>`.
 - Las `entries/resources` quedan aisladas por usuario autenticado.
+
+Si no configuras credenciales de Spotify, el backend igual guarda un link de busqueda en Spotify cuando detecta "cancion/canción" en el contenido de una nota.
 
 ## Endpoints principales
 

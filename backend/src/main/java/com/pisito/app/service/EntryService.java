@@ -1,7 +1,7 @@
 package com.pisito.app.service;
 
-import com.pisito.app.controller.dto.entry.CreateEntryRequest;
 import com.pisito.app.controller.dto.entry.CreateEntryResourceRequest;
+import com.pisito.app.controller.dto.entry.CreateNoteRequest;
 import com.pisito.app.controller.dto.entry.EntryResponse;
 import com.pisito.app.controller.dto.entry.UpdateEntryRequest;
 import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
@@ -10,6 +10,7 @@ import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.resource.ResourceResponse;
 import com.pisito.app.model.AppUser;
 import com.pisito.app.model.Entry;
+import com.pisito.app.model.FlagEnum;
 import com.pisito.app.model.LinkResource;
 import com.pisito.app.model.MediaResource;
 import com.pisito.app.model.Resource;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -30,15 +32,21 @@ public class EntryService {
 
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
+    private final OllamaTitleService ollamaTitleService;
+    private final SpotifySongLinkService spotifySongLinkService;
     private final UserRepository userRepository;
 
     public EntryService(
         EntryRepository entryRepository,
         ResourceRepository resourceRepository,
+        OllamaTitleService ollamaTitleService,
+        SpotifySongLinkService spotifySongLinkService,
         UserRepository userRepository
     ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
+        this.ollamaTitleService = ollamaTitleService;
+        this.spotifySongLinkService = spotifySongLinkService;
         this.userRepository = userRepository;
     }
 
@@ -55,16 +63,52 @@ public class EntryService {
     }
 
     @Transactional
-    public EntryResponse createEntry(Long userId, CreateEntryRequest request) {
-        AppUser owner = getUserOrThrow(userId);
+    public EntryResponse createEntry(Long userId, CreateNoteRequest request) {
+        String title = trimOrNull(request.getTitle());
 
         Entry entry = new Entry();
-        entry.setOwner(owner);
-        entry.setTitle(trimRequired(request.getTitle(), "title is required"));
+        entry.setOwner(getUserOrThrow(userId));
 
-        for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
-            entry.addResource(buildResource(resourceRequest));
+        TextResource firstTextResource = null;
+        if (request.getResources() != null) {
+            for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
+                Resource resource = buildResource(resourceRequest);
+                entry.addResource(resource);
+
+                if (firstTextResource == null
+                    && resource instanceof TextResource tr
+                    && StringUtils.hasText(tr.getTextContent())) {
+                    firstTextResource = tr;
+                }
+            }
         }
+
+        String firstText = firstTextResource != null ? firstTextResource.getTextContent().trim() : "";
+        String flagValue = request.getFlag() != null ? request.getFlag().name() : "";
+        String baseContext =
+            (StringUtils.hasText(flagValue) ? ("FLAG=" + flagValue + "\n") : "") +
+            (StringUtils.hasText(firstText) ? firstText : "");
+
+        if (!StringUtils.hasText(title)) {
+            title = ollamaTitleService.generateTitle(baseContext);
+        }
+        entry.setTitle(trimRequired(title, "title is required"));
+
+        if (request.getNotification()) {
+            entry.setNotificationDate(ollamaTitleService.extractNotificationDate(baseContext).orElse(null));
+        } else {
+            entry.setNotificationDate(null);
+        }
+
+        if (request.getFlag() == FlagEnum.SPOTIFY && StringUtils.hasText(firstText)) {
+            spotifySongLinkService.findSongLinkForNote(firstText).ifPresent(link -> {
+                LinkResource songLink = new LinkResource();
+                songLink.setTitle("Cancion sugerida");
+                songLink.setUrl(link);
+                entry.addResource(songLink);
+            });
+        }
+
         return toEntryResponse(entryRepository.save(entry));
     }
 
@@ -105,11 +149,11 @@ public class EntryService {
     @Transactional
     public void deleteResource(Long userId, Long entryId, Long resourceId) {
         Resource resource = getResourceOrThrow(resourceId);
-        if (!resource.getEntry().getId().equals(entryId) || !resource.getEntry().getOwner().getId().equals(userId)) {
+        Entry parent = resource.getEntry();
+        if (!parent.getId().equals(entryId) || !parent.getOwner().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
-        Entry entry = resource.getEntry();
-        entry.removeResource(resource);
+        parent.removeResource(resource);
     }
 
     @Transactional
@@ -133,9 +177,7 @@ public class EntryService {
             case TEXT -> {
                 TextResource resource = new TextResource();
                 resource.setTitle(trimOrNull(request.getTitle()));
-                resource.setTextContent(
-                    trimRequired(request.getTextContent(), "textContent is required for TEXT")
-                );
+                resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required for TEXT"));
                 yield resource;
             }
             case LINK -> {
@@ -147,9 +189,7 @@ public class EntryService {
             case MEDIA -> {
                 MediaResource resource = new MediaResource();
                 resource.setTitle(trimOrNull(request.getTitle()));
-                resource.setStorageKey(
-                    trimRequired(request.getStorageKey(), "storageKey is required for MEDIA")
-                );
+                resource.setStorageKey(trimRequired(request.getStorageKey(), "storageKey is required for MEDIA"));
                 resource.setFileName(trimOrNull(request.getFileName()));
                 resource.setMimeType(trimOrNull(request.getMimeType()));
                 yield resource;
