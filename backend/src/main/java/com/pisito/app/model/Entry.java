@@ -176,4 +176,11 @@ public class Entry {
         this.resources = resources;
     }
 
+    public Set<Folder> getFolders() {
+        return folders;
+    }
+
+    public void setFolders(Set<Folder> folders) {
+        this.folders = folders;
+    }
 }

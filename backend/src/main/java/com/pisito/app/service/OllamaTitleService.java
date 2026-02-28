@@ -29,15 +29,18 @@ public class OllamaTitleService {
     private final OllamaService ollamaService;
     private final Resource titlePromptTemplateResource;
     private final Resource notificationPromptTemplateResource;
+    private final Resource todoListPromptTemplateResource;
 
     public OllamaTitleService(
         OllamaService ollamaService,
         @Value("classpath:prompts/note-title.prompt.txt") Resource titlePromptTemplateResource,
-        @Value("classpath:prompts/note-notification-date.prompt.txt") Resource notificationPromptTemplateResource
+        @Value("classpath:prompts/note-notification-date.prompt.txt") Resource notificationPromptTemplateResource,
+        @Value("classpath:prompts/todo-list.prompt.txt") Resource todoListPromptTemplateResource
     ) {
         this.ollamaService = ollamaService;
         this.titlePromptTemplateResource = titlePromptTemplateResource;
         this.notificationPromptTemplateResource = notificationPromptTemplateResource;
+        this.todoListPromptTemplateResource = todoListPromptTemplateResource;
     }
 
     public String generateTitle(String text) {
@@ -108,6 +111,20 @@ public class OllamaTitleService {
         return Optional.empty();
     }
 
+    public String generateTodoList(String noteContent) {
+        String trimmed = noteContent == null ? "" : noteContent.trim();
+        if (!StringUtils.hasText(trimmed)) {
+            return "- [ ] Revisar y definir proximos pasos";
+        }
+
+        String prompt = buildTodoListPrompt(trimmed);
+        String raw = ollamaService.generate(prompt);
+        if (!StringUtils.hasText(raw)) {
+            return "- [ ] Revisar y definir proximos pasos";
+        }
+        return raw.trim();
+    }
+
     private String buildTitlePrompt(String noteContent) {
         String template = loadPromptTemplate(titlePromptTemplateResource);
         return template.replace("{{NOTE_CONTENT}}", noteContent);
@@ -118,6 +135,11 @@ public class OllamaTitleService {
         return template
             .replace("{{NOW_ISO}}", OffsetDateTime.now(MADRID_ZONE).toString())
             .replace("{{NOTE_CONTENT}}", noteContent);
+    }
+
+    private String buildTodoListPrompt(String noteContent) {
+        String template = loadPromptTemplate(todoListPromptTemplateResource);
+        return template.replace("{{NOTE_CONTENT}}", noteContent);
     }
 
     private String loadPromptTemplate(Resource promptTemplateResource) {

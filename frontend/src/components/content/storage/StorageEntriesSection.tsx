@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isApiError } from "../../../api/client";
 import {
   createTextResource,
@@ -33,6 +33,16 @@ type StorageEntriesSectionProps = {
   onUnauthorized: () => void;
 };
 
+const CHECKLIST_TITLES = new Set(["checklist", "todo list", "todolist", "todo"]);
+
+function isChecklistResource(resource: EntryItem["resources"][number]) {
+  if (resource.type !== "RAW") {
+    return false;
+  }
+  const title = (resource.title ?? "").trim().toLowerCase();
+  return CHECKLIST_TITLES.has(title);
+}
+
 function buildEntrySearchableText(entry: EntryItem) {
   const resourcesText = entry.resources
     .map((resource) =>
@@ -47,7 +57,7 @@ function buildEntrySearchableText(entry: EntryItem) {
 
 function buildEntryText(entry: EntryItem, emptyText: string) {
   const textResources = entry.resources
-    .filter((resource) => resource.type === "RAW")
+    .filter((resource) => resource.type === "RAW" && !isChecklistResource(resource))
     .map((resource) => resource.textContent?.trim() ?? "")
     .filter(Boolean);
 
@@ -63,6 +73,79 @@ function buildEntryText(entry: EntryItem, emptyText: string) {
   }
 
   return emptyText;
+}
+
+function buildEntryTodoListText(entry: EntryItem): string | null {
+  const todoResources = entry.resources
+    .filter((resource) => isChecklistResource(resource))
+    .map((resource) => resource.textContent?.trim() ?? "")
+    .filter(Boolean);
+
+  if (todoResources.length === 0) {
+    return null;
+  }
+  return todoResources.join("\n\n");
+}
+
+function renderTodoListMarkdown(markdown: string): ReactNode {
+  const lines = markdown.split(/\r?\n/);
+
+  return lines.map((rawLine, index) => {
+    const line = rawLine.trim();
+
+    if (!line) {
+      return <div key={`spacer-${index}`} className="h-1" />;
+    }
+
+    if (line.startsWith("## ")) {
+      return (
+        <h4 key={`h2-${index}`} className="text-sm font-extrabold tracking-wide text-ink-900">
+          {line.slice(3).trim()}
+        </h4>
+      );
+    }
+
+    if (line.startsWith("### ")) {
+      return (
+        <h5 key={`h3-${index}`} className="text-xs font-bold uppercase tracking-wide text-ink-600">
+          {line.slice(4).trim()}
+        </h5>
+      );
+    }
+
+    if (line.startsWith("- [ ] ") || line.startsWith("- [x] ") || line.startsWith("- [X] ")) {
+      const checked = line.startsWith("- [x] ") || line.startsWith("- [X] ");
+      const content = line.slice(6).trim();
+      return (
+        <div key={`task-${index}`} className="flex items-start gap-2 rounded-control border border-brand-200 bg-brand-50 px-2.5 py-1.5">
+          <span
+            className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
+              checked ? "border-brand-500 bg-brand-500 text-white" : "border-brand-300 bg-white text-transparent"
+            }`}
+            aria-hidden="true"
+          >
+            ✓
+          </span>
+          <p className="break-all whitespace-pre-wrap text-sm text-ink-800">{content}</p>
+        </div>
+      );
+    }
+
+    if (line.startsWith("- ")) {
+      return (
+        <div key={`bullet-${index}`} className="flex items-start gap-2 px-1">
+          <span className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-brand-500" aria-hidden="true" />
+          <p className="break-all whitespace-pre-wrap text-sm text-ink-700">{line.slice(2).trim()}</p>
+        </div>
+      );
+    }
+
+    return (
+      <p key={`p-${index}`} className="break-all whitespace-pre-wrap text-sm text-ink-700">
+        {line}
+      </p>
+    );
+  });
 }
 
 function getEntryLinks(entry: EntryItem) {
@@ -145,7 +228,13 @@ export function StorageEntriesSection({
     if (!selectedEntry) {
       return null;
     }
-    return selectedEntry.resources.find((resource) => resource.type === "RAW") ?? null;
+    return selectedEntry.resources.find((resource) => resource.type === "RAW" && !isChecklistResource(resource)) ?? null;
+  }, [selectedEntry]);
+  const selectedTodoListText = useMemo(() => {
+    if (!selectedEntry) {
+      return null;
+    }
+    return buildEntryTodoListText(selectedEntry);
   }, [selectedEntry]);
 
   const selectedFolderEntries = useMemo(() => {
@@ -882,6 +971,19 @@ export function StorageEntriesSection({
                       </button>
                     )}
                   </article>
+
+                  {selectedTodoListText && (
+                    <article className="rounded-control border border-brand-200 bg-white p-3">
+                      <div className="min-w-0 w-full">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                          {t("storage.detailTodoList")}
+                        </p>
+                        <div className="scrollbar-brand mt-2 grid max-h-72 gap-2 overflow-y-auto pr-1">
+                          {renderTodoListMarkdown(selectedTodoListText)}
+                        </div>
+                      </div>
+                    </article>
+                  )}
 
                   {selectedEntryLinks.length > 0 && (
                     <article className="rounded-control border border-brand-200 bg-white p-3">

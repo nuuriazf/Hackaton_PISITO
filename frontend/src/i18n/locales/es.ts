@@ -57,6 +57,7 @@ export const ES_MESSAGES = {
   "storage.editFieldAria": "Editar campo",
   "storage.detailEntryTitle": "Titulo",
   "storage.detailDescription": "Descripcion",
+  "storage.detailTodoList": "Todo list",
   "storage.detailAttachments": "Archivos adjuntos",
   "storage.detailNoAttachments": "Sin archivos adjuntos",
   "storage.foldersToggleAria": "Mostrar carpetas",

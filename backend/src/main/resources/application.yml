@@ -30,7 +30,7 @@ server:
 
 ollama:
   base-url: http://localhost:11434
-  model: llama3.1:8b
+  model: llama3.1:8b                                            
 
 spotify:
   api-base-url: https://api.spotify.com/v1

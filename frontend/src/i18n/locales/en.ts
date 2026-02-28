@@ -61,6 +61,7 @@ export const EN_MESSAGES: Record<I18nKey, string> = {
   "storage.editFieldAria": "Edit field",
   "storage.detailEntryTitle": "Title",
   "storage.detailDescription": "Description",
+  "storage.detailTodoList": "Todo list",
   "storage.detailAttachments": "Attached files",
   "storage.detailNoAttachments": "No attached files",
   "storage.foldersToggleAria": "Show folders",

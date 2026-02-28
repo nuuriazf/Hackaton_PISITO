@@ -129,6 +129,22 @@ public class EntryService {
             });
         }
 
+        if (entry.getFlag() == FlagEnum.CHECKLIST) {
+            String checklistContext = allTextContent.isEmpty() ? title : allTextContent.toString();
+            if (StringUtils.hasText(checklistContext)) {
+                try {
+                    String todoList = ollamaTitleService.generateTodoList(checklistContext);
+                    TextResource checklistResource = new TextResource();
+                    checklistResource.setTitle("Checklist");
+                    checklistResource.setTextContent(todoList);
+                    entry.addResource(checklistResource);
+                    log.info("createEntry checklist generated for userId={}", userId);
+                } catch (Exception ex) {
+                    log.warn("createEntry checklist generation failed for userId={}", userId, ex);
+                }
+            }
+        }
+
         return toEntryResponse(entryRepository.save(entry));
     }
 
@@ -176,7 +192,7 @@ public class EntryService {
         Resource resource = getResourceOrThrow(resourceId);
         Entry parent = resource.getEntry();
 
-        if (!parent.getId().equals(entryId) || !parent.getOwner().getId().equals(userId)) {
+        if (!parent.getId().equals(entryId) || !parent.getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
 
