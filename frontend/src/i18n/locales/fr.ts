@@ -57,6 +57,7 @@ export const FR_MESSAGES: Record<I18nKey, string> = {
   "storage.attachmentsCompact": "+{{count}}",
   "storage.detailTitle": "Detail",
   "storage.closeDetailAria": "Fermer le detail",
+  "storage.editFieldAria": "Modifier le champ",
   "storage.detailEntryTitle": "Titre",
   "storage.detailDescription": "Description",
   "storage.detailAttachments": "Fichiers joints",

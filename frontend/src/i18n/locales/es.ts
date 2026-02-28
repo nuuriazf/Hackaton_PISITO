@@ -53,6 +53,7 @@ export const ES_MESSAGES = {
   "storage.attachmentsCompact": "+{{count}}",
   "storage.detailTitle": "Detalle",
   "storage.closeDetailAria": "Cerrar detalle",
+  "storage.editFieldAria": "Editar campo",
   "storage.detailEntryTitle": "Titulo",
   "storage.detailDescription": "Descripcion",
   "storage.detailAttachments": "Archivos adjuntos",

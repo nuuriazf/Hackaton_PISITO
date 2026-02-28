@@ -57,6 +57,7 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "storage.attachmentsCompact": "+{{count}}",
   "storage.detailTitle": "Detalle",
   "storage.closeDetailAria": "Pechar detalle",
+  "storage.editFieldAria": "Editar campo",
   "storage.detailEntryTitle": "Titulo",
   "storage.detailDescription": "Descripcion",
   "storage.detailAttachments": "Arquivos anexos",

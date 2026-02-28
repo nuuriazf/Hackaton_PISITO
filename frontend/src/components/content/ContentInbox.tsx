@@ -542,7 +542,7 @@ export function ContentInbox({
                     </h2>
                     <button
                       type="button"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-brand-200 text-ink-700 transition hover:bg-brand-100"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
                       aria-label={t("profile.hideChangeUsernameAria")}
                       onClick={closeProfileForm}
                     >
@@ -586,7 +586,7 @@ export function ContentInbox({
                     </h2>
                     <button
                       type="button"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-brand-200 text-ink-700 transition hover:bg-brand-100"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
                       aria-label={t("profile.hideChangePasswordAria")}
                       onClick={closeProfileForm}
                     >

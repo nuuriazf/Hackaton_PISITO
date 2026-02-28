@@ -20,7 +20,7 @@ export const fieldLabelClass = "grid gap-1.5 text-sm font-medium text-ink-700";
 export const inputClass =
   "w-full rounded-control border border-brand-200 bg-white px-3 py-2.5 text-body text-ink-800 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-70";
 
-export const textareaClass = `${inputClass} min-h-24 resize-y`;
+export const textareaClass = `${inputClass} min-h-24 resize-none`;
 
 export const primaryButtonClass =
   "w-full rounded-control bg-brand-500 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 active:translate-y-px active:scale-[0.985] active:brightness-95 transform disabled:cursor-not-allowed disabled:opacity-70";

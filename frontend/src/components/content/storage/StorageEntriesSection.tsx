@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../../i18n/I18nProvider";
 import type { EntryItem } from "../../../types/resource";
 import { errorTextClass, fieldLabelClass, inputClass } from "../../ui/styles";
-import { TextComponentIcon, XMarkIcon } from "../../ui/icons";
+import { PencilSquareIcon, TextComponentIcon, XMarkIcon } from "../../ui/icons";
 
 type StorageEntriesSectionProps = {
   entries: EntryItem[];
@@ -42,13 +42,6 @@ function buildEntryText(entry: EntryItem, emptyText: string) {
   }
 
   return emptyText;
-}
-
-function getAttachmentNames(entry: EntryItem) {
-  return entry.resources
-    .filter((resource) => resource.type === "MEDIA")
-    .map((resource) => resource.fileName ?? resource.storageKey ?? resource.title ?? "")
-    .filter(Boolean);
 }
 
 export function StorageEntriesSection({
@@ -131,7 +124,6 @@ export function StorageEntriesSection({
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {filteredEntries.map((entry) => {
               const selected = selectedEntryId === entry.id;
-              const attachmentCount = getAttachmentNames(entry).length;
 
               return (
                 <button
@@ -146,14 +138,11 @@ export function StorageEntriesSection({
                 >
                   <div className="pr-12">
                     <h3 className="break-words text-base font-extrabold leading-snug text-ink-900">
-                      {entry.title}{" "}
-                      <span className="inline-block text-base font-extrabold text-ink-500">
-                        [{t("storage.attachmentsCompact", { count: attachmentCount })}]
-                      </span>
+                      {entry.title}
                     </h3>
                   </div>
                   <TextComponentIcon className="pointer-events-none absolute right-4 top-4 h-7 w-7 text-brand-600" />
-                  <div className="h-px w-full bg-brand-200" />
+                  <div className="mt-2 h-px w-full bg-brand-200" />
                   <p className="break-words text-sm text-ink-700 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                     {buildEntryText(entry, t("entries.noContent"))}
                   </p>
@@ -174,14 +163,14 @@ export function StorageEntriesSection({
                 }
               }}
             >
-              <section className="w-full max-w-[720px] rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
+              <section className="w-full max-w-[560px] rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
                 <div className="mb-4 flex items-center justify-between gap-2">
                   <h3 className="text-lg font-extrabold tracking-tight text-ink-900">
                     {t("storage.detailTitle")}
                   </h3>
                   <button
                     type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-brand-200 text-ink-700 transition hover:bg-brand-100"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
                     aria-label={t("storage.closeDetailAria")}
                     onClick={() => setSelectedEntryId(null)}
                   >
@@ -190,37 +179,38 @@ export function StorageEntriesSection({
                 </div>
 
                 <div className="grid gap-3">
-                  <article className="rounded-control border border-brand-200 bg-white p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                      {t("storage.detailEntryTitle")}
-                    </p>
-                    <p className="break-words text-base font-bold text-ink-900">{selectedEntry.title}</p>
+                  <article className="flex items-start justify-between gap-3 rounded-control border border-brand-200 bg-white p-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {t("storage.detailEntryTitle")}
+                      </p>
+                      <p className="break-words text-base font-normal text-ink-900">{selectedEntry.title}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-brand-100"
+                      aria-label={t("storage.editFieldAria")}
+                    >
+                      <PencilSquareIcon className="h-5 w-5" />
+                    </button>
                   </article>
 
-                  <article className="rounded-control border border-brand-200 bg-white p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                      {t("storage.detailDescription")}
-                    </p>
-                    <p className="break-words text-sm text-ink-700">
-                      {buildEntryText(selectedEntry, t("entries.noContent"))}
-                    </p>
-                  </article>
-
-                  <article className="rounded-control border border-brand-200 bg-white p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                      {t("storage.detailAttachments")}
-                    </p>
-                    {getAttachmentNames(selectedEntry).length === 0 ? (
-                      <p className="text-sm text-ink-700">{t("storage.detailNoAttachments")}</p>
-                    ) : (
-                      <ul className="grid gap-1 text-sm text-ink-700">
-                        {getAttachmentNames(selectedEntry).map((attachmentName) => (
-                          <li key={attachmentName} className="break-all">
-                            {attachmentName}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                  <article className="flex items-start justify-between gap-3 rounded-control border border-brand-200 bg-white p-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {t("storage.detailDescription")}
+                      </p>
+                      <p className="break-words text-sm text-ink-700">
+                        {buildEntryText(selectedEntry, t("entries.noContent"))}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-brand-100"
+                      aria-label={t("storage.editFieldAria")}
+                    >
+                      <PencilSquareIcon className="h-5 w-5" />
+                    </button>
                   </article>
                 </div>
               </section>
