@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply m-0 bg-brand-50 font-sans text-ink-900 antialiased;
+  }
+}
+
+@layer components {
+  .btn-fill-anim {
+    background-image: linear-gradient(to right, var(--btn-fill), var(--btn-fill));
+    background-repeat: no-repeat;
+    background-position: left top;
+    background-size: 0% 100%;
+    transition:
+      background-size 280ms ease,
+      background-color 280ms ease,
+      color 280ms ease,
+      border-color 280ms ease;
+  }
+
+  .btn-fill-anim:hover {
+    background-size: 100% 100%;
+  }
+
+  .btn-fill-anim:disabled:hover {
+    background-size: 0% 100%;
+  }
+}

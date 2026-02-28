@@ -1,0 +1,97 @@
+import { useCallback, useEffect, useState } from "react";
+import { getMe, login, register } from "../api/auth";
+import { clearAccessToken, getAccessToken, setAccessToken } from "../api/client";
+import type { AuthCredentials, AuthTokenResponse, AuthUser } from "../types/auth";
+import { readErrorMessage } from "../utils/error";
+
+const SESSION_EXPIRED_MESSAGE = "Tu sesion ya no es valida. Vuelve a iniciar sesion.";
+
+export function useAuthSession() {
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function bootstrapSession() {
+      try {
+        const user = await getMe();
+        if (!ignore) {
+          setAuthUser(user);
+          setAuthError(null);
+        }
+      } catch {
+        clearAccessToken();
+        if (!ignore) {
+          setAuthUser(null);
+        }
+      } finally {
+        if (!ignore) {
+          setCheckingSession(false);
+        }
+      }
+    }
+
+    if (!getAccessToken()) {
+      setCheckingSession(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    void bootstrapSession();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const executeAuth = useCallback(async (request: () => Promise<AuthTokenResponse>) => {
+    try {
+      setAuthSubmitting(true);
+      setAuthError(null);
+
+      const response = await request();
+      setAccessToken(response.accessToken);
+      setAuthUser(response.user);
+    } catch (error) {
+      setAuthError(readErrorMessage(error));
+    } finally {
+      setAuthSubmitting(false);
+    }
+  }, []);
+
+  const loginUser = useCallback(
+    async (credentials: AuthCredentials) => executeAuth(() => login(credentials)),
+    [executeAuth]
+  );
+
+  const registerUser = useCallback(
+    async (credentials: AuthCredentials) => executeAuth(() => register(credentials)),
+    [executeAuth]
+  );
+
+  const logout = useCallback(() => {
+    clearAccessToken();
+    setAuthUser(null);
+    setAuthError(null);
+  }, []);
+
+  const expireSession = useCallback(() => {
+    clearAccessToken();
+    setAuthUser(null);
+    setAuthError(SESSION_EXPIRED_MESSAGE);
+  }, []);
+
+  return {
+    authUser,
+    checkingSession,
+    authSubmitting,
+    authError,
+    loginUser,
+    registerUser,
+    logout,
+    expireSession
+  };
+}
