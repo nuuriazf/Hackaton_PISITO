@@ -1,27 +1,21 @@
-import { FormEvent, useEffect, useState } from "react";
-import { createResource, deleteResource, fetchResources, uploadResourceFile } from "./api/resources";
-import type { ResourceType, SavedResource } from "./types/resource";
-
-const uploadTypes: ResourceType[] = ["IMAGE", "PHOTO", "FILE"];
-const urlTypes: ResourceType[] = ["LINK", "VIDEO"];
+import { useEffect, useState } from "react";
+import { fetchEntries, uploadDocument } from "./services/backendService";
+import type { Entry } from "./types/entry";
 
 function App() {
-  const [resources, setResources] = useState<SavedResource[]>([]);
-  const [type, setType] = useState<ResourceType>("TEXT");
-  const [title, setTitle] = useState("");
-  const [textContent, setTextContent] = useState("");
-  const [externalUrl, setExternalUrl] = useState("");
+  const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadResources() {
+  async function loadEntries() {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchResources();
-      setResources(data);
+      const data = await fetchEntries();
+      setEntries(data);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -30,151 +24,60 @@ function App() {
   }
 
   useEffect(() => {
-    loadResources();
+    loadEntries();
   }, []);
 
-  function resetForm() {
-    setTitle("");
-    setTextContent("");
-    setExternalUrl("");
-    setSelectedFile(null);
-  }
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function onUpload() {
+    if (!selectedFile) {
+      setUploadMessage("Selecciona un archivo antes de subir.");
+      return;
+    }
 
     try {
-      setSending(true);
+      setUploading(true);
+      setUploadMessage(null);
       setError(null);
-
-      if (type === "TEXT") {
-        if (!textContent.trim()) {
-          throw new Error("Para TEXT debes escribir contenido.");
-        }
-        await createResource({
-          type,
-          title,
-          textContent
-        });
-      } else if (urlTypes.includes(type)) {
-        if (!externalUrl.trim()) {
-          throw new Error(`Para ${type} debes indicar una URL.`);
-        }
-        await createResource({
-          type,
-          title,
-          externalUrl
-        });
-      } else {
-        if (!selectedFile) {
-          throw new Error("Debes seleccionar un archivo para subir.");
-        }
-        await uploadResourceFile(type, selectedFile, title);
-      }
-
-      resetForm();
-      await loadResources();
+      await uploadDocument(selectedFile);
+      setUploadMessage("Archivo subido correctamente.");
+      setSelectedFile(null);
+      await loadEntries();
     } catch (err) {
+      setUploadMessage(null);
       setError((err as Error).message);
     } finally {
-      setSending(false);
-    }
-  }
-
-  async function onDelete(id: number) {
-    try {
-      await deleteResource(id);
-      await loadResources();
-    } catch (err) {
-      setError((err as Error).message);
+      setUploading(false);
     }
   }
 
   return (
     <main className="container">
       <section className="card">
-        <h1>Pisito Content Hub</h1>
-        <p className="subtitle">Plantilla Front + Back para texto, links, videos y archivos</p>
-
-        <form className="form" onSubmit={onSubmit}>
-          <select value={type} onChange={(event) => setType(event.target.value as ResourceType)}>
-            <option value="TEXT">TEXT</option>
-            <option value="LINK">LINK</option>
-            <option value="VIDEO">VIDEO</option>
-            <option value="IMAGE">IMAGE</option>
-            <option value="PHOTO">PHOTO</option>
-            <option value="FILE">FILE</option>
-          </select>
+        <h1>Entries</h1>
+        <p className="subtitle">NOTAS</p>
+        <div className="form">
           <input
-            type="text"
-            placeholder="Titulo (opcional)"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            type="file"
+            onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
           />
-
-          {type === "TEXT" && (
-            <textarea
-              placeholder="Texto a guardar"
-              value={textContent}
-              onChange={(event) => setTextContent(event.target.value)}
-            />
-          )}
-
-          {urlTypes.includes(type) && (
-            <input
-              type="url"
-              placeholder="https://..."
-              value={externalUrl}
-              onChange={(event) => setExternalUrl(event.target.value)}
-            />
-          )}
-
-          {uploadTypes.includes(type) && (
-            <input
-              type="file"
-              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-            />
-          )}
-
-          <button type="submit" disabled={sending}>
-            {sending ? "Enviando..." : "Enviar al backend"}
+          <button type="button" onClick={onUpload} disabled={uploading}>
+            {uploading ? "Subiendo..." : "Subir documento"}
           </button>
-        </form>
+          {uploadMessage && <p>{uploadMessage}</p>}
+        </div>
 
         {loading && <p>Cargando...</p>}
         {error && <p className="error">Error: {error}</p>}
 
-        {!loading && resources.length === 0 && <p>No hay recursos todavia.</p>}
+        {!loading && entries.length === 0 && <p>No hay entries todavia.</p>}
 
         <ul className="list">
-          {resources.map((resource) => (
-            <li key={resource.id} className="resource-item">
+          {entries.map((entry, index) => (
+            <li key={entry.id ?? `entry-${index}`} className="resource-item">
               <div>
-                <span className="badge">{resource.type}</span>
-                {resource.title && <strong>{resource.title}</strong>}
-
-                {resource.textContent && <p>{resource.textContent}</p>}
-
-                {resource.externalUrl && (
-                  <p>
-                    <a href={resource.externalUrl} target="_blank" rel="noreferrer">
-                      {resource.externalUrl}
-                    </a>
-                  </p>
-                )}
-
-                {resource.accessUrl && (
-                  <p>
-                    <a href={resource.accessUrl} target="_blank" rel="noreferrer">
-                      Ver archivo guardado
-                    </a>
-                  </p>
-                )}
+                <span className="badge">#{entry.id ?? index + 1}</span>
+                <strong>{String(entry.title ?? "Sin titulo")}</strong>
+                <p>{JSON.stringify(entry, null, 2)}</p>
               </div>
-
-              <button type="button" onClick={() => onDelete(resource.id)}>
-                Borrar
-              </button>
             </li>
           ))}
         </ul>
