@@ -3,7 +3,7 @@
 Monorepo para una web movil (responsive) con:
 
 - `frontend/`: React + TypeScript (Vite)
-- `backend/`: Java Spring Boot + H2 (sin Docker)
+- `backend/`: Java Spring Boot + Postgres/Supabase (sin Docker)
 - `docs/`: contrato de API y notas
 - `shared/`: tipos compartidos opcionales
 
@@ -57,7 +57,6 @@ Abrir:
 - Front: `http://localhost:5173`
 - Back: `http://localhost:8080`
 - Health check: `http://localhost:8080/api/health`
-- H2 console: `http://localhost:8080/h2-console`
 
 ## Comunicacion Front-Back (plantilla base)
 
@@ -106,6 +105,6 @@ npm run build
 ## Notas
 
 - No se usa Docker para mantener setup rapido.
-- Base de datos: H2 en memoria (ideal para hackaton/demo).
-- Si mas adelante migrais a Postgres/MySQL o Supabase, se cambia en `backend/src/main/resources/application.yml` y en la persistencia de `MediaResource`.
+- Base de datos: Postgres (Supabase).
+- Configuracion en `backend/src/main/resources/application.yml` y mediante variables `SUPABASE_DB_URL`, `SUPABASE_DB_USER`, `SUPABASE_DB_PASSWORD`.
 

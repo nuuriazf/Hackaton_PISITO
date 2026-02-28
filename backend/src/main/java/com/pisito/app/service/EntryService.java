@@ -12,6 +12,7 @@ import com.pisito.app.model.Entry;
 import com.pisito.app.model.LinkResource;
 import com.pisito.app.model.MediaResource;
 import com.pisito.app.model.Resource;
+import com.pisito.app.model.ResourceType;
 import com.pisito.app.model.TextResource;
 import com.pisito.app.repository.EntryRepository;
 import com.pisito.app.repository.ResourceRepository;
@@ -36,7 +37,7 @@ public class EntryService {
 
     @Transactional(readOnly = true)
     public List<EntryResponse> findAll() {
-        return entryRepository.findAllByOrderByCreatedAtDesc().stream()
+        return entryRepository.findAllByOrderByCreateDateDesc().stream()
             .map(this::toEntryResponse)
             .toList();
     }
@@ -50,6 +51,7 @@ public class EntryService {
     public EntryResponse createEntry(CreateEntryRequest request) {
         Entry entry = new Entry();
         entry.setTitle(trimRequired(request.getTitle(), "title is required"));
+        entry.setUserId(request.getUserId());
         for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
             entry.addResource(buildResource(resourceRequest));
         }
@@ -60,6 +62,9 @@ public class EntryService {
     public EntryResponse updateEntry(Long entryId, UpdateEntryRequest request) {
         Entry entry = getEntryOrThrow(entryId);
         entry.setTitle(trimRequired(request.getTitle(), "title is required"));
+        if (request.getUserId() != null) {
+            entry.setUserId(request.getUserId());
+        }
         entry.touch();
         return toEntryResponse(entry);
     }
@@ -67,15 +72,13 @@ public class EntryService {
     @Transactional
     public ResourceResponse addTextResource(Long entryId, CreateTextResourceRequest request) {
         TextResource resource = new TextResource();
-        resource.setTitle(trimOrNull(request.getTitle()));
-        resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required"));
+        resource.setText(trimRequired(request.getTextContent(), "textContent is required"));
         return saveResource(entryId, resource);
     }
 
     @Transactional
     public ResourceResponse addLinkResource(Long entryId, CreateLinkResourceRequest request) {
         LinkResource resource = new LinkResource();
-        resource.setTitle(trimOrNull(request.getTitle()));
         resource.setUrl(trimRequired(request.getUrl(), "url is required"));
         return saveResource(entryId, resource);
     }
@@ -83,10 +86,7 @@ public class EntryService {
     @Transactional
     public ResourceResponse addMediaResource(Long entryId, CreateMediaResourceRequest request) {
         MediaResource resource = new MediaResource();
-        resource.setTitle(trimOrNull(request.getTitle()));
-        resource.setStorageKey(trimRequired(request.getStorageKey(), "storageKey is required"));
-        resource.setFileName(trimOrNull(request.getFileName()));
-        resource.setMimeType(trimOrNull(request.getMimeType()));
+        resource.setPath(trimRequired(request.getStorageKey(), "path is required"));
         return saveResource(entryId, resource);
     }
 
@@ -120,26 +120,19 @@ public class EntryService {
         return switch (request.getType()) {
             case TEXT -> {
                 TextResource resource = new TextResource();
-                resource.setTitle(trimOrNull(request.getTitle()));
-                resource.setTextContent(
+                resource.setText(
                     trimRequired(request.getTextContent(), "textContent is required for TEXT")
                 );
                 yield resource;
             }
             case LINK -> {
                 LinkResource resource = new LinkResource();
-                resource.setTitle(trimOrNull(request.getTitle()));
                 resource.setUrl(trimRequired(request.getUrl(), "url is required for LINK"));
                 yield resource;
             }
             case MEDIA -> {
                 MediaResource resource = new MediaResource();
-                resource.setTitle(trimOrNull(request.getTitle()));
-                resource.setStorageKey(
-                    trimRequired(request.getStorageKey(), "storageKey is required for MEDIA")
-                );
-                resource.setFileName(trimOrNull(request.getFileName()));
-                resource.setMimeType(trimOrNull(request.getMimeType()));
+                resource.setPath(trimRequired(request.getStorageKey(), "path is required for MEDIA"));
                 yield resource;
             }
         };
@@ -164,8 +157,8 @@ public class EntryService {
             entry.getId(),
             entry.getTitle(),
             resources,
-            entry.getCreatedAt(),
-            entry.getUpdatedAt()
+            entry.getCreateDate(),
+            entry.getUpdateDate()
         );
     }
 
@@ -175,27 +168,34 @@ public class EntryService {
         String storageKey = null;
         String fileName = null;
         String mimeType = null;
+        ResourceType type;
 
         if (resource instanceof TextResource textResource) {
-            textContent = textResource.getTextContent();
+            textContent = textResource.getText();
+            type = ResourceType.TEXT;
         } else if (resource instanceof LinkResource linkResource) {
             url = linkResource.getUrl();
+            type = ResourceType.LINK;
         } else if (resource instanceof MediaResource mediaResource) {
-            storageKey = mediaResource.getStorageKey();
-            fileName = mediaResource.getFileName();
-            mimeType = mediaResource.getMimeType();
+            storageKey = mediaResource.getPath();
+            type = ResourceType.MEDIA;
+        } else {
+            throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Unsupported resource type"
+            );
         }
 
         return new ResourceResponse(
             resource.getId(),
-            resource.getType(),
-            resource.getTitle(),
+            type,
+            null,
             textContent,
             url,
             storageKey,
             fileName,
             mimeType,
-            resource.getCreatedAt()
+            resource.getEntry().getCreateDate()
         );
     }
 

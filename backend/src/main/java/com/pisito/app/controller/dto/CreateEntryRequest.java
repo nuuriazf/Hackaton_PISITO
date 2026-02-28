@@ -2,6 +2,7 @@ package com.pisito.app.controller.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
@@ -13,6 +14,9 @@ public class CreateEntryRequest {
     @Size(max = 120)
     private String title;
 
+    @NotNull
+    private Long userId;
+
     @Valid
     private List<CreateEntryResourceRequest> resources = new ArrayList<>();
 
@@ -22,6 +26,14 @@ public class CreateEntryRequest {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public List<CreateEntryResourceRequest> getResources() {
