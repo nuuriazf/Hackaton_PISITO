@@ -2,6 +2,10 @@
 
 Base URL: `http://localhost:8080`
 
+Auth:
+- Excepto `GET /api/health`, `POST /api/auth/register` y `POST /api/auth/login`,
+  el resto de endpoints requiere `Authorization: Bearer <jwt>`.
+
 ## Health
 
 - `GET /api/health`
@@ -10,7 +14,84 @@ Base URL: `http://localhost:8080`
     { "status": "ok" }
     ```
 
+## Auth endpoints
+
+- `POST /api/auth/register`
+  - Request:
+    ```json
+    {
+      "username": "demo_user",
+      "password": "pisito123"
+    }
+    ```
+  - Response `201`:
+    ```json
+    {
+      "tokenType": "Bearer",
+      "accessToken": "<jwt>",
+      "expiresInSeconds": 86400,
+      "user": {
+        "id": 1,
+        "username": "demo_user",
+        "createdAt": "2026-02-28T01:00:00Z",
+        "updatedAt": "2026-02-28T01:00:00Z",
+        "lastLoginAt": null,
+        "passwordUpdatedAt": "2026-02-28T01:00:00Z"
+      }
+    }
+    ```
+
+- `POST /api/auth/login`
+  - Request:
+    ```json
+    {
+      "username": "demo_user",
+      "password": "pisito123"
+    }
+    ```
+  - Response `200`: mismo formato que `register` con nuevo JWT.
+  - `401` si credenciales invalidas.
+
+- `GET /api/auth/me`
+  - Header:
+    - `Authorization: Bearer <jwt>`
+  - Response `200`: datos del usuario con auditoria.
+  - `401` si token invalido o ausente.
+
+- `PUT /api/auth/me/username`
+  - Header:
+    - `Authorization: Bearer <jwt>`
+  - Request:
+    ```json
+    {
+      "username": "nuevo_nombre",
+      "currentPassword": "pisito123"
+    }
+    ```
+  - Response `200`: mismo formato token + user.
+
+- `PUT /api/auth/me/password`
+  - Header:
+    - `Authorization: Bearer <jwt>`
+  - Request:
+    ```json
+    {
+      "currentPassword": "pisito123",
+      "newPassword": "pisito1234"
+    }
+    ```
+  - Response `200`: mismo formato token + user.
+
 ## Domain model
+
+- `AppUser`
+  - `id`
+  - `username` (unico, en minusculas)
+  - `password` (hash BCrypt)
+  - `createdAt`
+  - `updatedAt`
+  - `lastLoginAt`
+  - `passwordUpdatedAt`
 
 - `Entry`
   - `id`
@@ -31,6 +112,8 @@ Base URL: `http://localhost:8080`
   - `MediaResource`: `storageKey`, `fileName`, `mimeType`
 
 ## Entry endpoints
+
+- Todas las operations de Entry/Resource son por usuario autenticado (owner).
 
 - `GET /api/entries`
   - Lista todas las entradas con sus recursos.

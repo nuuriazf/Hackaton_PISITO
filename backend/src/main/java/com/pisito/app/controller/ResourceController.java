@@ -1,12 +1,13 @@
 package com.pisito.app.controller;
 
-import com.pisito.app.controller.dto.CreateLinkResourceRequest;
-import com.pisito.app.controller.dto.CreateMediaResourceRequest;
-import com.pisito.app.controller.dto.CreateTextResourceRequest;
-import com.pisito.app.controller.dto.ResourceResponse;
+import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
+import com.pisito.app.controller.dto.resource.CreateMediaResourceRequest;
+import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
+import com.pisito.app.controller.dto.resource.ResourceResponse;
 import com.pisito.app.service.EntryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,33 +29,49 @@ public class ResourceController {
     @PostMapping("/text")
     @ResponseStatus(HttpStatus.CREATED)
     public ResourceResponse addTextResource(
+        Authentication authentication,
         @PathVariable Long entryId,
         @Valid @RequestBody CreateTextResourceRequest request
     ) {
-        return entryService.addTextResource(entryId, request);
+        return entryService.addTextResource(currentUserId(authentication), entryId, request);
     }
 
     @PostMapping("/link")
     @ResponseStatus(HttpStatus.CREATED)
     public ResourceResponse addLinkResource(
+        Authentication authentication,
         @PathVariable Long entryId,
         @Valid @RequestBody CreateLinkResourceRequest request
     ) {
-        return entryService.addLinkResource(entryId, request);
+        return entryService.addLinkResource(currentUserId(authentication), entryId, request);
     }
 
     @PostMapping("/media")
     @ResponseStatus(HttpStatus.CREATED)
     public ResourceResponse addMediaResource(
+        Authentication authentication,
         @PathVariable Long entryId,
         @Valid @RequestBody CreateMediaResourceRequest request
     ) {
-        return entryService.addMediaResource(entryId, request);
+        return entryService.addMediaResource(currentUserId(authentication), entryId, request);
     }
 
     @DeleteMapping("/{resourceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteResource(@PathVariable Long entryId, @PathVariable Long resourceId) {
-        entryService.deleteResource(entryId, resourceId);
+    public void deleteResource(
+        Authentication authentication,
+        @PathVariable Long entryId,
+        @PathVariable Long resourceId
+    ) {
+        entryService.deleteResource(currentUserId(authentication), entryId, resourceId);
+    }
+
+    private Long currentUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Long userId) {
+            return userId;
+        }
+        return Long.parseLong(String.valueOf(principal));
     }
 }
+

@@ -1,16 +1,13 @@
-package com.pisito.app.controller.dto;
+package com.pisito.app.controller.dto.entry;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public class CreateLinkResourceRequest {
-
-    @Size(max = 120)
-    private String title;
+public class UpdateEntryRequest {
 
     @NotBlank
-    @Size(max = 1000)
-    private String url;
+    @Size(max = 120)
+    private String title;
 
     public String getTitle() {
         return title;
@@ -19,13 +16,6 @@ public class CreateLinkResourceRequest {
     public void setTitle(String title) {
         this.title = title;
     }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
 }
+
 

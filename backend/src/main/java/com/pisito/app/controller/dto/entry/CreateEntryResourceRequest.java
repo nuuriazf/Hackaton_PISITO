@@ -1,4 +1,4 @@
-package com.pisito.app.controller.dto;
+package com.pisito.app.controller.dto.entry;
 
 import com.pisito.app.model.ResourceType;
 import jakarta.validation.constraints.NotNull;
@@ -83,3 +83,4 @@ public class CreateEntryResourceRequest {
         this.mimeType = mimeType;
     }
 }
+

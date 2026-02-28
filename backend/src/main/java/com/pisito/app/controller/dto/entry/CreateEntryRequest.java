@@ -1,4 +1,4 @@
-package com.pisito.app.controller.dto;
+package com.pisito.app.controller.dto.entry;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -32,3 +32,4 @@ public class CreateEntryRequest {
         this.resources = resources == null ? new ArrayList<>() : resources;
     }
 }
+

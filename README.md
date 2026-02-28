@@ -69,6 +69,11 @@ Modelo backend:
 
 Backend expone:
 
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `PUT /api/auth/me/username`
+- `PUT /api/auth/me/password`
 - `GET /api/entries`
 - `GET /api/entries/{entryId}`
 - `POST /api/entries` (titulo y opcional `resources[]`)
@@ -79,6 +84,11 @@ Backend expone:
 - `DELETE /api/entries/{entryId}`
 
 Contrato detallado en [`docs/api.md`](docs/api.md).
+
+Nota de auth:
+- `POST /api/auth/register` y `POST /api/auth/login` son publicos.
+- El resto de endpoints `/api/**` requiere `Authorization: Bearer <jwt>`.
+- Las `entries/resources` se filtran por el usuario del token.
 
 ## Flujo de equipo recomendado (3 dias)
 
@@ -109,3 +119,25 @@ npm run build
 - Base de datos: H2 en memoria (ideal para hackaton/demo).
 - Si mas adelante migrais a Postgres/MySQL o Supabase, se cambia en `backend/src/main/resources/application.yml` y en la persistencia de `MediaResource`.
 
+
+## Configuracion de entorno (Supabase opcional)
+
+1. Crea un archivo `.env` en la raiz tomando como base `.env.example`.
+2. Rellena `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` con tus credenciales.
+3. Para Supabase usa `SQL_INIT_MODE=never` (evita ejecutar `data.sql` local en remoto).
+4. Arranca backend y frontend como siempre.
+
+PowerShell (ejemplo rapido):
+
+```powershell
+# desde la raiz del repo
+$env:DB_URL="jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require"
+$env:DB_USERNAME="postgres.<tu_project_ref>"
+$env:DB_PASSWORD="<tu_password>"
+$env:DB_DRIVER_CLASS="org.postgresql.Driver"
+$env:SQL_INIT_MODE="never"
+$env:H2_CONSOLE_ENABLED="false"
+$env:APP_JWT_SECRET="<base64_secret>"
+cd backend
+mvn spring-boot:run
+```

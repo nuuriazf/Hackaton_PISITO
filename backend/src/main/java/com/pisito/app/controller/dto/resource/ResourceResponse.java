@@ -1,4 +1,4 @@
-package com.pisito.app.controller.dto;
+package com.pisito.app.controller.dto.resource;
 
 import com.pisito.app.model.ResourceType;
 
@@ -16,4 +16,5 @@ public record ResourceResponse(
     Instant createdAt
 ) {
 }
+
 
