@@ -1,6 +1,9 @@
 spring:
   datasource:
-    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:6543/postgres?user=postgres.twpfpjpuoojgutxhukja&password=iR3MAD7F6bwCAKnf
+    url: jdbc:postgresql://localhost:5432/pisito_db
+    username: pisito_user
+    password: pisito_password
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
