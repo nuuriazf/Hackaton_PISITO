@@ -45,9 +45,9 @@ export function LoginForm({ submitting, error, onSubmit }: LoginFormProps) {
   }
 
   return (
-    <section className="flex min-h-[520px] w-full max-w-[500px] flex-col rounded-card border border-brand-200 bg-brand-50 p-5 shadow-card sm:min-h-[560px] sm:p-6 md:min-h-[620px] md:p-8">
-      <form className="flex h-full flex-1 flex-col" onSubmit={handleSubmit}>
-        <div className="flex justify-start">
+    <section className="relative flex min-h-[780px] w-full max-w-[390px] flex-col justify-center rounded-card border border-brand-200 bg-[#F9F9F7] p-5 shadow-card sm:min-h-[820px] sm:p-6 md:min-h-[844px] md:p-8">
+      <form className="flex w-full flex-col" onSubmit={handleSubmit}>
+        <div className="absolute left-5 top-5 sm:left-6 sm:top-6 md:left-8 md:top-8">
           <Link
             to="/"
             aria-label={t("common.back")}
@@ -61,56 +61,64 @@ export function LoginForm({ submitting, error, onSubmit }: LoginFormProps) {
           </Link>
         </div>
 
-        <header className="mt-5 text-center sm:mt-6">
-          <h1
-            className={`${pageTitleClass} text-[2rem] font-extrabold leading-[1.07] tracking-[-0.03em] sm:text-[2.4rem]`}
+        <div style={{ marginTop: "-60px" }}>
+          <header className="mt-5 text-center sm:mt-6">
+            <h1
+              className={`${pageTitleClass} text-[25px] font-extrabold leading-[1.07] tracking-[-0.03em] sm:text-[31px]`}
+            >
+              {t("login.title")}
+            </h1>
+            <p className="text-base leading-relaxed text-ink-600 sm:text-[1.05rem]">{t("login.subtitle")}</p>
+          </header>
+
+          <div className="mt-5 grid gap-4 sm:mt-6">
+            <label className={`${fieldLabelClass} ${usernameError ? "text-rose-700" : ""}`}>
+              <span>{t("auth.usernameLabel")}</span>
+              <input
+                type="text"
+                minLength={3}
+                maxLength={40}
+                autoComplete="username"
+                placeholder={t("auth.usernamePlaceholder")}
+                className={`${inputClass} ${usernameError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
+                aria-invalid={Boolean(usernameError)}
+                value={username}
+                disabled={submitting}
+                onChange={(event) => setUsername(event.target.value)}
+              />
+              {usernameErrorText && <p className="text-sm font-medium text-rose-700">{t(usernameErrorText)}</p>}
+            </label>
+
+            <label className={`${fieldLabelClass} ${passwordError ? "text-rose-700" : ""}`}>
+              <span>{t("auth.passwordLabel")}</span>
+              <input
+                type="password"
+                minLength={8}
+                maxLength={72}
+                autoComplete="current-password"
+                placeholder={t("auth.passwordPlaceholder")}
+                className={`${inputClass} ${passwordError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
+                aria-invalid={Boolean(passwordError)}
+                value={password}
+                disabled={submitting}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+              {passwordErrorText && <p className="text-sm font-medium text-rose-700">{t(passwordErrorText)}</p>}
+            </label>
+
+            {error && <p className={errorTextClass}>{t("common.errorPrefix", { message: error })}</p>}
+          </div>
+
+          <Button
+            type="submit"
+            variant="secondary"
+            size="lg"
+            className="mt-6 !text-[#111827]"
+            disabled={submitting}
           >
-            {t("login.title")}
-          </h1>
-          <p className="text-base leading-relaxed text-ink-600 sm:text-[1.05rem]">{t("login.subtitle")}</p>
-        </header>
-
-        <div className="mt-5 grid gap-4 sm:mt-6">
-          <label className={`${fieldLabelClass} ${usernameError ? "text-rose-700" : ""}`}>
-            <span>{t("auth.usernameLabel")}</span>
-            <input
-              type="text"
-              minLength={3}
-              maxLength={40}
-              autoComplete="username"
-              placeholder={t("auth.usernamePlaceholder")}
-              className={`${inputClass} ${usernameError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
-              aria-invalid={Boolean(usernameError)}
-              value={username}
-              disabled={submitting}
-              onChange={(event) => setUsername(event.target.value)}
-            />
-            {usernameErrorText && <p className="text-sm font-medium text-rose-700">{t(usernameErrorText)}</p>}
-          </label>
-
-          <label className={`${fieldLabelClass} ${passwordError ? "text-rose-700" : ""}`}>
-            <span>{t("auth.passwordLabel")}</span>
-            <input
-              type="password"
-              minLength={8}
-              maxLength={72}
-              autoComplete="current-password"
-              placeholder={t("auth.passwordPlaceholder")}
-              className={`${inputClass} ${passwordError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
-              aria-invalid={Boolean(passwordError)}
-              value={password}
-              disabled={submitting}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-            {passwordErrorText && <p className="text-sm font-medium text-rose-700">{t(passwordErrorText)}</p>}
-          </label>
-
-          {error && <p className={errorTextClass}>{t("common.errorPrefix", { message: error })}</p>}
+            {submitting ? t("login.submitting") : t("common.continue")}
+          </Button>
         </div>
-
-        <Button type="submit" variant="secondary" size="lg" className="mt-auto" disabled={submitting}>
-          {submitting ? t("login.submitting") : t("common.accept")}
-        </Button>
       </form>
     </section>
   );

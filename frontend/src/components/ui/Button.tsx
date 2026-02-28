@@ -14,8 +14,8 @@ const baseButtonClass =
   "btn-fill-anim inline-flex items-center justify-center overflow-hidden rounded-control border disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70";
 
 const variantClassMap: Record<ButtonVariant, string> = {
-  primary: "border-transparent bg-brand-500 text-white [--btn-fill:#0073D1]",
-  secondary: "border-brand-200 bg-white text-brand-700 shadow-sm [--btn-fill:#4D82BC] [--btn-text-hover:#ffffff]",
+  primary: "border-transparent bg-[#13505B] text-white [--btn-fill:#13505B]",
+  secondary: "border-brand-200 bg-white text-brand-700 shadow-sm [--btn-fill:#119DA4] [--btn-text-hover:#ffffff]",
   ghost: "border-brand-200 bg-brand-50 text-brand-600 [--btn-fill:#B8DFFF]",
   neutral: "border-transparent bg-white text-ink-900 shadow-sm [--btn-fill:#E6F4FF]",
   danger: "border-rose-600 bg-rose-500 text-white [--btn-fill:#E11D48]"

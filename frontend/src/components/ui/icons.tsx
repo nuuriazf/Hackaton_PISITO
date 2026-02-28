@@ -1,3 +1,6 @@
+import frameImage from "../../assets/Frame.png";
+import spotifyImage from "../../assets/spotify.svg";
+
 export {
   ArrowLongLeftIcon,
   ArrowUpRightIcon,
@@ -7,7 +10,6 @@ export {
   ListBulletIcon,
   LinkIcon,
   MagnifyingGlassIcon,
-  MusicalNoteIcon,
   PencilSquareIcon,
   PhotoIcon,
   UserIcon,
@@ -17,6 +19,29 @@ export {
 type IconProps = {
   className: string;
 };
+
+export function FrameIcon({ className }: IconProps) {
+  return <img src={frameImage} alt="" className={className} aria-hidden="true" />;
+}
+
+export function MusicalNoteIcon({ className }: IconProps) {
+  return (
+    <span
+      className={`inline-block bg-current ${className}`}
+      style={{
+        WebkitMaskImage: `url(${spotifyImage})`,
+        maskImage: `url(${spotifyImage})`,
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+        WebkitMaskSize: "contain",
+        maskSize: "contain"
+      }}
+      aria-hidden="true"
+    />
+  );
+}
 
 export function SuccessCheckCircleIcon({ className }: IconProps) {
   return (

@@ -44,10 +44,10 @@ type InboxEntryCreateFormProps = {
 
 function toggleButtonClass(active: boolean) {
   return [
-    "flex h-11 w-full items-center justify-center rounded-control border transition sm:w-11",
+    "glass-surface flex h-11 w-11 items-center justify-center border transition",
     active
-      ? "border-brand-500 bg-brand-500 text-white shadow-sm"
-      : "border-brand-200 bg-white text-brand-700 hover:bg-brand-50"
+      ? "border-white bg-black/20 text-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+      : "text-brand-700 hover:bg-white/20"
   ].join(" ");
 }
 
@@ -71,7 +71,7 @@ function IconToggleButton({ label, active, disabled = false, onClick, children }
       >
         {children}
       </button>
-      <span className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-[calc(100%+6px)] whitespace-nowrap rounded-md bg-ink-900 px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 peer-hover:opacity-100 peer-focus-visible:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-0 z-[200] -translate-x-1/2 -translate-y-[calc(100%+6px)] whitespace-nowrap rounded-md bg-ink-900 px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 peer-hover:opacity-100 peer-focus-visible:opacity-100">
         {label}
       </span>
     </div>
@@ -131,11 +131,16 @@ export function InboxEntryCreateForm({
   }
 
   return (
-    <form className="grid w-full gap-3" onSubmit={handleSubmit}>
-      <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
+    <form className="grid w-full gap-3 font-sans inbox-glass-text" onSubmit={handleSubmit}>
+      <section className="glass-card h-auto w-full max-w-full p-5 md:p-6 [&_label>span]:text-[#FFFFFF]">
         {heading ? (
           <div className="mb-4">
-            <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink-900">{heading}</h2>
+            <h2
+              className="text-center text-[19px] font-medium tracking-tight text-[#FFFFFF]"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              {t("inbox.composerHeading")}
+            </h2>
           </div>
         ) : null}
         <div className="grid gap-4">
@@ -183,8 +188,8 @@ export function InboxEntryCreateForm({
             <div
               className={`rounded-control border-2 border-dashed px-4 py-5 text-center transition ${
                 isFileDropActive
-                  ? "border-brand-500 bg-brand-100 text-brand-800"
-                  : "border-brand-200 bg-brand-50 text-ink-700"
+                  ? "border-[#FFFFFF] bg-[#FFFFFF]/20 text-[#FFFFFF]"
+                  : "border-[#FFFFFF] bg-[#FFFFFF]/10 text-[#FFFFFF]"
               }`}
             >
               <div className="flex flex-col items-center justify-center gap-2">
@@ -195,8 +200,8 @@ export function InboxEntryCreateForm({
         </div>
       </section>
 
-      <section className="rounded-card border border-brand-200 bg-white/95 p-3 shadow-card">
-        <div className="grid grid-cols-4 gap-2 sm:flex sm:items-center sm:gap-2">
+      <section className="glass-card h-auto w-full max-w-full overflow-visible p-3">
+        <div className="flex flex-wrap items-center gap-2">
           <IconToggleButton
             label={t("icon.youtube")}
             active={values.selectedPrimaryOption === "youtube"}
@@ -262,13 +267,13 @@ export function InboxEntryCreateForm({
             <SurveyIcon className="h-6 w-6" />
           </IconToggleButton>
 
-          <div className="col-span-4 my-1 hidden h-11 w-px justify-self-center bg-brand-200 sm:mx-3 sm:my-0 sm:block" />
+          <div className="my-1 hidden h-11 w-px bg-brand-200 sm:mx-3 sm:my-0 sm:block" />
 
           <IconToggleButton label={t("icon.alarm")} active={values.alarmEnabled} disabled={submitting} onClick={toggleAlarm}>
             <AlarmClockIcon className="h-6 w-6" />
           </IconToggleButton>
 
-          <div className="col-span-4 pt-1 sm:ml-auto sm:flex sm:shrink-0 sm:pl-2 sm:pt-0">
+          <div className="w-full pt-1 sm:ml-auto sm:flex sm:w-auto sm:shrink-0 sm:pl-2 sm:pt-0">
             <Button
               type="submit"
               variant="primary"

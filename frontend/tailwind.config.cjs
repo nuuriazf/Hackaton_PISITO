@@ -26,7 +26,7 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ["Avenir Next", "Segoe UI", "Trebuchet MS", "sans-serif"]
+        sans: ["Inter", "Avenir Next", "Segoe UI", "Trebuchet MS", "sans-serif"]
       },
       fontSize: {
         display: ["2rem", { lineHeight: "2.3rem", letterSpacing: "-0.02em", fontWeight: "700" }],

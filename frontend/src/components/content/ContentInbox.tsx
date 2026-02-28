@@ -10,6 +10,7 @@ import type { CreateEntryResourceInput, EntryItem } from "../../types/resource";
 import { readErrorMessage } from "../../utils/error";
 import {
   Cog6ToothIcon,
+  FrameIcon,
   InboxArrowDownIcon,
   MagnifyingGlassIcon,
   NotificationBellIcon,
@@ -134,6 +135,7 @@ export function ContentInbox({
   const [storageLoading, setStorageLoading] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [storageSearchValue, setStorageSearchValue] = useState("");
+  const [inboxComposerExpanded, setInboxComposerExpanded] = useState(false);
 
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameCurrentPassword, setUsernameCurrentPassword] = useState("");
@@ -148,6 +150,7 @@ export function ContentInbox({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const headerMenusRef = useRef<HTMLDivElement | null>(null);
+  const inboxComposerRef = useRef<HTMLDivElement | null>(null);
   const successToastMessage = usernameMessage ?? passwordMessage ?? inboxMessage;
 
   useEffect(() => {
@@ -157,6 +160,12 @@ export function ContentInbox({
   useEffect(() => {
     setActiveSection(sectionFromPath(location.pathname));
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (activeSection !== "inbox") {
+      setInboxComposerExpanded(false);
+    }
+  }, [activeSection]);
 
   const loadStorageEntries = useCallback(async () => {
     try {
@@ -211,6 +220,25 @@ export function ContentInbox({
       document.removeEventListener("keydown", handleDocumentKeyDown);
     };
   }, [notificationsOpen, settingsOpen]);
+
+  useEffect(() => {
+    if (activeSection !== "inbox" || !inboxComposerExpanded) {
+      return;
+    }
+
+    function handleDocumentMouseDown(event: MouseEvent) {
+      const target = event.target as Node;
+      if (!inboxComposerRef.current?.contains(target)) {
+        setInboxComposerExpanded(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleDocumentMouseDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentMouseDown);
+    };
+  }, [activeSection, inboxComposerExpanded]);
 
   useEffect(() => {
     if (!successToastMessage) {
@@ -399,8 +427,12 @@ export function ContentInbox({
     }
   }
 
+  function openInboxComposer() {
+    setInboxComposerExpanded(true);
+  }
+
   return (
-    <section className="relative h-screen overflow-hidden bg-gradient-to-br from-brand-100 via-brand-50 to-brand-200">
+    <section className="relative h-screen overflow-hidden bg-gradient-to-br from-[#13505B] to-[#119DA4]">
       <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-brand-200 bg-white/90 px-4 backdrop-blur-sm sm:px-6">
         <h1 className="text-lg font-extrabold tracking-tight text-ink-900">{t("app.name")}</h1>
         <div className="relative flex items-center gap-2" ref={headerMenusRef}>
@@ -627,14 +659,34 @@ export function ContentInbox({
               </section>
             </section>
           ) : activeSection === "inbox" ? (
-            <InboxEntryCreateForm
-              values={inboxEntryForm}
-              submitting={inboxSubmitting}
-              error={inboxError}
-              heading="Inbox"
-              onSubmit={handleCreateInboxEntry}
-              onChange={patchInboxEntryForm}
-            />
+            inboxComposerExpanded ? (
+              <div ref={inboxComposerRef}>
+                <InboxEntryCreateForm
+                  values={inboxEntryForm}
+                  submitting={inboxSubmitting}
+                  error={inboxError}
+                  heading="Inbox"
+                  onSubmit={handleCreateInboxEntry}
+                  onChange={patchInboxEntryForm}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="mx-auto flex h-[135px] w-[354px] max-w-full cursor-pointer items-center justify-center glass-card inbox-glass-text p-5 text-center"
+                onClick={openInboxComposer}
+              >
+                <div className="grid place-items-center gap-1.5">
+                  <FrameIcon className="h-8 w-8 brightness-0 invert opacity-95" />
+                  <p className="text-[18px] font-medium text-[#111827]" style={{ fontFamily: "Inter, sans-serif" }}>
+                    {t("inbox.previewTitle")}
+                  </p>
+                  <p className="text-[14px] font-normal text-[#111827]" style={{ fontFamily: "Inter, sans-serif" }}>
+                    {t("inbox.previewSubtitle")}
+                  </p>
+                </div>
+              </button>
+            )
           ) : activeSection === "storage" ? (
             <StorageEntriesSection
               entries={storageEntries}
