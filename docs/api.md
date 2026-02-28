@@ -40,33 +40,53 @@ Base URL: `http://localhost:8080`
   - `404` si no existe.
 
 - `POST /api/entries`
-  - Crea una entry con titulo y, opcionalmente, recursos iniciales.
-  - Request:
+  - Crea una entry con título y recursos (multipart/form-data).
+  - Request (multipart/form-data):
+    - `title` (string, required): Título de la entrada
+    - `userId` (number, required): ID del usuario propietario
+    - `textResources` (string[], optional): Array de textos a incluir
+    - `linkResources` (string[], optional): Array de URLs a incluir
+    - `mediaFiles` (file[], optional): Array de archivos a subir
+  - Ejemplo con curl:
+    ```bash
+    curl -X POST http://localhost:8080/api/entries \
+      -F "title=Ideas de producto" \
+      -F "userId=1" \
+      -F "textResources=Nota inicial" \
+      -F "textResources=Otra nota" \
+      -F "linkResources=https://example.com" \
+      -F "mediaFiles=@/path/to/file1.jpg" \
+      -F "mediaFiles=@/path/to/file2.pdf"
+    ```
+  - Response `201`: entry creada con todos sus recursos.
     ```json
     {
+      "id": 1,
       "title": "Ideas de producto",
+      "createDate": "2026-02-28T05:00:00Z",
+      "updateDate": "2026-02-28T05:00:00Z",
       "resources": [
         {
+          "id": 1,
           "type": "TEXT",
-          "title": "Nota inicial",
-          "textContent": "Texto plano del usuario"
+          "textContent": "Nota inicial",
+          "createDate": "2026-02-28T05:00:00Z"
         },
         {
+          "id": 2,
           "type": "LINK",
-          "title": "Referencia",
-          "url": "https://supabase.com/docs"
+          "url": "https://example.com",
+          "createDate": "2026-02-28T05:00:00Z"
         },
         {
+          "id": 3,
           "type": "MEDIA",
-          "title": "Media local",
-          "storageKey": "media/foto-1.jpg",
-          "fileName": "foto-1.jpg",
-          "mimeType": "image/jpeg"
+          "storageKey": "a1b2c3d4-e5f6.jpg",
+          "createDate": "2026-02-28T05:00:00Z"
         }
       ]
     }
     ```
-  - Response `201`: entry creada.
 
 - `PUT /api/entries/{entryId}`
   - Request:
@@ -84,44 +104,19 @@ Base URL: `http://localhost:8080`
 
 ## Resource endpoints (dentro de una Entry)
 
-- `POST /api/entries/{entryId}/resources/text`
-  - Request:
-    ```json
-    {
-      "title": "Nota",
-      "textContent": "Texto plano del usuario"
-    }
-    ```
-
-- `POST /api/entries/{entryId}/resources/link`
-  - Request:
-    ```json
-    {
-      "title": "Referencia",
-      "url": "https://supabase.com/docs"
-    }
-    ```
-
-- `POST /api/entries/{entryId}/resources/media`
-  - Request:
-    ```json
-    {
-      "title": "Media local",
-      "storageKey": "media/asset-1.mp4",
-      "fileName": "asset-1.mp4",
-      "mimeType": "video/mp4"
-    }
-    ```
+**Nota:** Los recursos ahora se crean junto con la entry usando `multipart/form-data` en el endpoint `POST /api/entries`. Los siguientes endpoints solo están disponibles para eliminar recursos.
 
 - `DELETE /api/entries/{entryId}/resources/{resourceId}`
   - Response `204`: recurso eliminado.
+  - Los archivos asociados a MediaResource son automáticamente eliminados del servidor.
   - `404` si no existe o no pertenece a esa entry.
 
 ## Flujo recomendado
 
-1. Front crea una `Entry` con `POST /api/entries`.
-2. Front anade recursos tipados a esa entry con los endpoints `/resources/{type}`.
-3. Front consulta `GET /api/entries` para pintar el contenido completo.
+1. Front crea una `Entry` con todos sus recursos en un único `POST /api/entries` (multipart/form-data).
+2. Front consulta `GET /api/entries` para pintar el contenido completo.
+3. Front puede eliminar recursos individuales con `DELETE /api/entries/{entryId}/resources/{resourceId}`.
+
 
 
 

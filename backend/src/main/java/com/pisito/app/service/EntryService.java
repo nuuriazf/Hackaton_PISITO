@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -29,10 +30,12 @@ public class EntryService {
 
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
+    private final FileStorageService fileStorageService;
 
-    public EntryService(EntryRepository entryRepository, ResourceRepository resourceRepository) {
+    public EntryService(EntryRepository entryRepository, ResourceRepository resourceRepository, FileStorageService fileStorageService) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -48,13 +51,51 @@ public class EntryService {
     }
 
     @Transactional
-    public EntryResponse createEntry(CreateEntryRequest request) {
+    public EntryResponse createEntry(
+        String title,
+        Long userId,
+        List<String> textResources,
+        List<String> linkResources,
+        List<MultipartFile> mediaFiles
+    ) {
         Entry entry = new Entry();
-        entry.setTitle(trimRequired(request.getTitle(), "title is required"));
-        entry.setUserId(request.getUserId());
-        for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
-            entry.addResource(buildResource(resourceRequest));
+        entry.setTitle(trimRequired(title, "title is required"));
+        entry.setUserId(userId);
+
+        // Agregar recursos de texto
+        if (textResources != null) {
+            for (String text : textResources) {
+                if (StringUtils.hasText(text)) {
+                    TextResource resource = new TextResource();
+                    resource.setText(text.trim());
+                    entry.addResource(resource);
+                }
+            }
         }
+
+        // Agregar recursos de link
+        if (linkResources != null) {
+            for (String url : linkResources) {
+                if (StringUtils.hasText(url)) {
+                    LinkResource resource = new LinkResource();
+                    resource.setUrl(url.trim());
+                    entry.addResource(resource);
+                }
+            }
+        }
+
+        // Agregar recursos de media
+        if (mediaFiles != null) {
+            for (MultipartFile file : mediaFiles) {
+                if (!file.isEmpty()) {
+                    String fileName = fileStorageService.storeFile(file);
+                    MediaResource resource = new MediaResource();
+                    resource.setPath(fileName);
+                    entry.addResource(resource);
+                }
+            }
+        }
+
         return toEntryResponse(entryRepository.save(entry));
     }
 
@@ -70,24 +111,15 @@ public class EntryService {
     }
 
     @Transactional
-    public ResourceResponse addTextResource(Long entryId, CreateTextResourceRequest request) {
-        TextResource resource = new TextResource();
-        resource.setText(trimRequired(request.getTextContent(), "textContent is required"));
-        return saveResource(entryId, resource);
-    }
-
-    @Transactional
-    public ResourceResponse addLinkResource(Long entryId, CreateLinkResourceRequest request) {
-        LinkResource resource = new LinkResource();
-        resource.setUrl(trimRequired(request.getUrl(), "url is required"));
-        return saveResource(entryId, resource);
-    }
-
-    @Transactional
-    public ResourceResponse addMediaResource(Long entryId, CreateMediaResourceRequest request) {
-        MediaResource resource = new MediaResource();
-        resource.setPath(trimRequired(request.getStorageKey(), "path is required"));
-        return saveResource(entryId, resource);
+    public void deleteEntry(Long entryId) {
+        Entry entry = getEntryOrThrow(entryId);
+        // Eliminar archivos de media
+        for (Resource resource : entry.getResources()) {
+            if (resource instanceof MediaResource mediaResource) {
+                fileStorageService.deleteFile(mediaResource.getPath());
+            }
+        }
+        entryRepository.delete(entry);
     }
 
     @Transactional
@@ -96,46 +128,12 @@ public class EntryService {
         if (!resource.getEntry().getId().equals(entryId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
+        // Si es un media resource, eliminar el archivo
+        if (resource instanceof MediaResource mediaResource) {
+            fileStorageService.deleteFile(mediaResource.getPath());
+        }
         Entry entry = resource.getEntry();
         entry.removeResource(resource);
-    }
-
-    @Transactional
-    public void deleteEntry(Long entryId) {
-        Entry entry = getEntryOrThrow(entryId);
-        entryRepository.delete(entry);
-    }
-
-    private ResourceResponse saveResource(Long entryId, Resource resource) {
-        Entry entry = getEntryOrThrow(entryId);
-        entry.addResource(resource);
-        return toResourceResponse(resourceRepository.save(resource));
-    }
-
-    private Resource buildResource(CreateEntryResourceRequest request) {
-        if (request.getType() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resource type is required");
-        }
-
-        return switch (request.getType()) {
-            case TEXT -> {
-                TextResource resource = new TextResource();
-                resource.setText(
-                    trimRequired(request.getTextContent(), "textContent is required for TEXT")
-                );
-                yield resource;
-            }
-            case LINK -> {
-                LinkResource resource = new LinkResource();
-                resource.setUrl(trimRequired(request.getUrl(), "url is required for LINK"));
-                yield resource;
-            }
-            case MEDIA -> {
-                MediaResource resource = new MediaResource();
-                resource.setPath(trimRequired(request.getStorageKey(), "path is required for MEDIA"));
-                yield resource;
-            }
-        };
     }
 
     private Entry getEntryOrThrow(Long entryId) {
@@ -214,3 +212,4 @@ public class EntryService {
         return value.trim();
     }
 }
+
