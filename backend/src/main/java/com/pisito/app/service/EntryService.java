@@ -22,10 +22,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -64,67 +62,14 @@ public class EntryService {
     }
 
     @Transactional
-    public EntryResponse createEntry(CreateEntryRequest request) {
+    public EntryResponse createEntry(Long userId, CreateEntryRequest request) {
         Entry entry = new Entry();
         entry.setTitle(trimRequired(request.getTitle(), "title is required"));
-        entry.setUserId(request.getUserId());
+        entry.setOwner(getUserOrThrow(userId));
         for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
             entry.addResource(buildResource(resourceRequest));
         }
         return toEntryResponse(entryRepository.save(entry));
-    }
-
-    @Transactional
-    public EntryResponse createEntry(
-        String title,
-        Long userId,
-        List<String> textResources,
-        List<String> linkResources,
-        List<MultipartFile> mediaFiles
-    ) {
-        CreateEntryRequest request = new CreateEntryRequest();
-        request.setTitle(title);
-        request.setUserId(userId);
-        request.setResources(new ArrayList<>());
-
-        if (textResources != null) {
-            for (String text : textResources) {
-                if (!StringUtils.hasText(text)) {
-                    continue;
-                }
-                CreateEntryResourceRequest resource = new CreateEntryResourceRequest();
-                resource.setType(ResourceType.TEXT);
-                resource.setTextContent(text.trim());
-                request.getResources().add(resource);
-            }
-        }
-
-        if (linkResources != null) {
-            for (String url : linkResources) {
-                if (!StringUtils.hasText(url)) {
-                    continue;
-                }
-                CreateEntryResourceRequest resource = new CreateEntryResourceRequest();
-                resource.setType(ResourceType.LINK);
-                resource.setUrl(url.trim());
-                request.getResources().add(resource);
-            }
-        }
-
-        if (mediaFiles != null) {
-            for (MultipartFile file : mediaFiles) {
-                if (file == null || file.isEmpty()) {
-                    continue;
-                }
-                CreateEntryResourceRequest resource = new CreateEntryResourceRequest();
-                resource.setType(ResourceType.MEDIA);
-                String fileName = trimOrNull(file.getOriginalFilename());
-                resource.setStorageKey(fileName != null ? "upload://" + fileName : "upload://unnamed");
-                request.getResources().add(resource);
-            }
-        }
-
-        return createEntry(request);
     }
 
     @Transactional
@@ -134,15 +79,18 @@ public class EntryService {
         if (!StringUtils.hasText(title)) {
             title = ollamaTitleService.generateTitle(noteContent);
         }
+
         Entry entry = new Entry();
         entry.setTitle(trimRequired(title, "title is required"));
-        entry.setUserId(request.getUserId());
+        entry.setOwner(getUserOrThrow(request.getUserId()));
 
-        TextResource resource = new TextResource();
-        resource.setText(noteContent);
-        entry.addResource(resource);
+        TextResource textResource = new TextResource();
+        textResource.setTextContent(noteContent);
+        entry.addResource(textResource);
+
         spotifySongLinkService.findSongLinkForNote(noteContent).ifPresent(link -> {
             LinkResource songLink = new LinkResource();
+            songLink.setTitle("Cancion sugerida");
             songLink.setUrl(link);
             entry.addResource(songLink);
         });
@@ -159,24 +107,11 @@ public class EntryService {
     }
 
     @Transactional
-    public ResourceResponse addTextResource(Long entryId, CreateTextResourceRequest request) {
+    public ResourceResponse addTextResource(Long userId, Long entryId, CreateTextResourceRequest request) {
         TextResource resource = new TextResource();
-        resource.setText(trimRequired(request.getTextContent(), "textContent is required"));
-        return saveResource(entryId, resource);
-    }
-
-    @Transactional
-    public ResourceResponse addLinkResource(Long entryId, CreateLinkResourceRequest request) {
-        LinkResource resource = new LinkResource();
-        resource.setUrl(trimRequired(request.getUrl(), "url is required"));
-        return saveResource(entryId, resource);
-    }
-
-    @Transactional
-    public ResourceResponse addMediaResource(Long entryId, CreateMediaResourceRequest request) {
-        MediaResource resource = new MediaResource();
-        resource.setPath(trimRequired(request.getStorageKey(), "path is required"));
-        return saveResource(entryId, resource);
+        resource.setTitle(trimOrNull(request.getTitle()));
+        resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required"));
+        return saveResource(userId, entryId, resource);
     }
 
     @Transactional
@@ -200,21 +135,21 @@ public class EntryService {
     @Transactional
     public void deleteResource(Long userId, Long entryId, Long resourceId) {
         Resource resource = getResourceOrThrow(resourceId);
-        if (!resource.getEntry().getId().equals(entryId) || !resource.getEntry().getOwner().getId().equals(userId)) {
+        Entry parent = resource.getEntry();
+        if (!parent.getId().equals(entryId) || !parent.getOwner().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
-        Entry entry = resource.getEntry();
-        entry.removeResource(resource);
+        parent.removeResource(resource);
     }
 
     @Transactional
-    public void deleteEntry(Long entryId) {
-        Entry entry = getEntryOrThrow(entryId);
+    public void deleteEntry(Long userId, Long entryId) {
+        Entry entry = getEntryOrThrow(userId, entryId);
         entryRepository.delete(entry);
     }
 
-    private ResourceResponse saveResource(Long entryId, Resource resource) {
-        Entry entry = getEntryOrThrow(entryId);
+    private ResourceResponse saveResource(Long userId, Long entryId, Resource resource) {
+        Entry entry = getEntryOrThrow(userId, entryId);
         entry.addResource(resource);
         return toResourceResponse(resourceRepository.save(resource));
     }
@@ -227,26 +162,29 @@ public class EntryService {
         return switch (request.getType()) {
             case TEXT -> {
                 TextResource resource = new TextResource();
-                resource.setText(
-                    trimRequired(request.getTextContent(), "textContent is required for TEXT")
-                );
+                resource.setTitle(trimOrNull(request.getTitle()));
+                resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required for TEXT"));
                 yield resource;
             }
             case LINK -> {
                 LinkResource resource = new LinkResource();
+                resource.setTitle(trimOrNull(request.getTitle()));
                 resource.setUrl(trimRequired(request.getUrl(), "url is required for LINK"));
                 yield resource;
             }
             case MEDIA -> {
                 MediaResource resource = new MediaResource();
-                resource.setPath(trimRequired(request.getStorageKey(), "path is required for MEDIA"));
+                resource.setTitle(trimOrNull(request.getTitle()));
+                resource.setStorageKey(trimRequired(request.getStorageKey(), "storageKey is required for MEDIA"));
+                resource.setFileName(trimOrNull(request.getFileName()));
+                resource.setMimeType(trimOrNull(request.getMimeType()));
                 yield resource;
             }
         };
     }
 
-    private Entry getEntryOrThrow(Long entryId) {
-        return entryRepository.findById(entryId)
+    private Entry getEntryOrThrow(Long userId, Long entryId) {
+        return entryRepository.findByIdAndOwnerId(entryId, userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
     }
 

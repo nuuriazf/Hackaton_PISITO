@@ -36,7 +36,6 @@ spotify:
 app:
   upload:
     dir: uploads
-app:
   jwt:
     # Base64-encoded key. Replace in production with APP_JWT_SECRET.
     secret: ${APP_JWT_SECRET:bXktZGV2LXN1cGVyLXNlY3JldC1rZXktZm9yLWp3dC0zMi1ieXRlcy1taW4=}
