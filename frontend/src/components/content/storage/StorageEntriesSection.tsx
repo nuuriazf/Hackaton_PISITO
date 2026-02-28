@@ -42,7 +42,9 @@ function buildEntrySearchableText(entry: EntryItem) {
     )
     .join(" ");
 
-  return `${entry.title} ${resourcesText}`.toLowerCase();
+  const tagsText = entry.tags?.map(tag => tag.name).join(" ") || "";
+
+  return `${entry.title} ${resourcesText} ${tagsText}`.toLowerCase();
 }
 
 function buildEntryText(entry: EntryItem, emptyText: string) {
@@ -675,6 +677,18 @@ export function StorageEntriesSection({
                   <p className="break-words text-sm text-ink-700 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                     {buildEntryText(entry, t("entries.noContent"))}
                   </p>
+                  {entry.tags && entry.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {entry.tags.map((tag) => (
+                        <span 
+                          key={tag.id} 
+                          className="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-800"
+                        >
+                          #{tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -905,6 +919,23 @@ export function StorageEntriesSection({
                       </div>
                     </article>
                   )}
+                    {selectedEntry.tags && selectedEntry.tags.length > 0 && (
+                      <article className="rounded-control border border-brand-200 bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                          {t("storage.tags")}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selectedEntry.tags.map((tag) => (
+                            <span 
+                              key={tag.id} 
+                              className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-1 text-sm font-semibold text-brand-800"
+                            >
+                              #{tag.name}
+                            </span>
+                          ))}
+                        </div>
+                      </article>
+                    )}
                     {detailSaveError && <p className={errorTextClass}>{t("common.errorPrefix", { message: detailSaveError })}</p>}
                     {detailSaveSuccess && (
                       <p className="text-sm font-semibold text-emerald-600">{detailSaveSuccess}</p>

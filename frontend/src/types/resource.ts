@@ -1,3 +1,9 @@
+export type TagItem = {
+  id: number;
+  name: string;
+  createdAt: string;
+};
+
 export type ResourceType = "RAW" | "LINK" | "MEDIA";
 export type EntryFlag =
   | "RAW"
@@ -25,6 +31,7 @@ export type EntryItem = {
   id: number;
   title: string;
   resources: ResourceItem[];
+  tags: TagItem[];
   createdAt: string;
   updatedAt: string;
 };

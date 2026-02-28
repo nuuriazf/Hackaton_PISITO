@@ -86,6 +86,7 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "storage.entryFoldersLoading": "Cargando carpetas...",
   "storage.entryFoldersEmpty": "Non hai carpetas para asignar.",
   "storage.detailSaved": "Cambios gardados.",
+  "storage.tags": "Etiquetas",
   "profile.title": "Perfil",
   "profile.username": "Nome de usuario",
   "profile.password": "Contrasinal",
