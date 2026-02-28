@@ -1,22 +1,23 @@
 package com.pisito.app.service;
 
-import com.pisito.app.controller.dto.CreateEntryRequest;
-import com.pisito.app.controller.dto.CreateEntryResourceRequest;
-import com.pisito.app.controller.dto.CreateLinkResourceRequest;
-import com.pisito.app.controller.dto.CreateMediaResourceRequest;
 import com.pisito.app.controller.dto.CreateNoteRequest;
-import com.pisito.app.controller.dto.CreateTextResourceRequest;
-import com.pisito.app.controller.dto.EntryResponse;
-import com.pisito.app.controller.dto.ResourceResponse;
-import com.pisito.app.controller.dto.UpdateEntryRequest;
+import com.pisito.app.controller.dto.entry.CreateEntryRequest;
+import com.pisito.app.controller.dto.entry.CreateEntryResourceRequest;
+import com.pisito.app.controller.dto.entry.EntryResponse;
+import com.pisito.app.controller.dto.entry.UpdateEntryRequest;
+import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
+import com.pisito.app.controller.dto.resource.CreateMediaResourceRequest;
+import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
+import com.pisito.app.controller.dto.resource.ResourceResponse;
+import com.pisito.app.model.AppUser;
 import com.pisito.app.model.Entry;
 import com.pisito.app.model.LinkResource;
 import com.pisito.app.model.MediaResource;
 import com.pisito.app.model.Resource;
-import com.pisito.app.model.ResourceType;
 import com.pisito.app.model.TextResource;
 import com.pisito.app.repository.EntryRepository;
 import com.pisito.app.repository.ResourceRepository;
+import com.pisito.app.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,29 +35,32 @@ public class EntryService {
     private final ResourceRepository resourceRepository;
     private final OllamaTitleService ollamaTitleService;
     private final SpotifySongLinkService spotifySongLinkService;
+    private final UserRepository userRepository;
 
     public EntryService(
         EntryRepository entryRepository,
         ResourceRepository resourceRepository,
         OllamaTitleService ollamaTitleService,
-        SpotifySongLinkService spotifySongLinkService
+        SpotifySongLinkService spotifySongLinkService,
+        UserRepository userRepository
     ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
         this.ollamaTitleService = ollamaTitleService;
         this.spotifySongLinkService = spotifySongLinkService;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
-    public List<EntryResponse> findAll() {
-        return entryRepository.findAllByOrderByCreateDateDesc().stream()
+    public List<EntryResponse> findAll(Long userId) {
+        return entryRepository.findAllByOwnerIdOrderByCreatedAtDesc(userId).stream()
             .map(this::toEntryResponse)
             .toList();
     }
 
     @Transactional(readOnly = true)
-    public EntryResponse findById(Long entryId) {
-        return toEntryResponse(getEntryOrThrow(entryId));
+    public EntryResponse findById(Long userId, Long entryId) {
+        return toEntryResponse(getEntryOrThrow(userId, entryId));
     }
 
     @Transactional
@@ -147,12 +151,9 @@ public class EntryService {
     }
 
     @Transactional
-    public EntryResponse updateEntry(Long entryId, UpdateEntryRequest request) {
-        Entry entry = getEntryOrThrow(entryId);
+    public EntryResponse updateEntry(Long userId, Long entryId, UpdateEntryRequest request) {
+        Entry entry = getEntryOrThrow(userId, entryId);
         entry.setTitle(trimRequired(request.getTitle(), "title is required"));
-        if (request.getUserId() != null) {
-            entry.setUserId(request.getUserId());
-        }
         entry.touch();
         return toEntryResponse(entry);
     }
@@ -179,9 +180,27 @@ public class EntryService {
     }
 
     @Transactional
-    public void deleteResource(Long entryId, Long resourceId) {
+    public ResourceResponse addLinkResource(Long userId, Long entryId, CreateLinkResourceRequest request) {
+        LinkResource resource = new LinkResource();
+        resource.setTitle(trimOrNull(request.getTitle()));
+        resource.setUrl(trimRequired(request.getUrl(), "url is required"));
+        return saveResource(userId, entryId, resource);
+    }
+
+    @Transactional
+    public ResourceResponse addMediaResource(Long userId, Long entryId, CreateMediaResourceRequest request) {
+        MediaResource resource = new MediaResource();
+        resource.setTitle(trimOrNull(request.getTitle()));
+        resource.setStorageKey(trimRequired(request.getStorageKey(), "storageKey is required"));
+        resource.setFileName(trimOrNull(request.getFileName()));
+        resource.setMimeType(trimOrNull(request.getMimeType()));
+        return saveResource(userId, entryId, resource);
+    }
+
+    @Transactional
+    public void deleteResource(Long userId, Long entryId, Long resourceId) {
         Resource resource = getResourceOrThrow(resourceId);
-        if (!resource.getEntry().getId().equals(entryId)) {
+        if (!resource.getEntry().getId().equals(entryId) || !resource.getEntry().getOwner().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
         Entry entry = resource.getEntry();
@@ -231,6 +250,11 @@ public class EntryService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
     }
 
+    private AppUser getUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
     private Resource getResourceOrThrow(Long resourceId) {
         return resourceRepository.findById(resourceId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
@@ -245,8 +269,8 @@ public class EntryService {
             entry.getId(),
             entry.getTitle(),
             resources,
-            entry.getCreateDate(),
-            entry.getUpdateDate()
+            entry.getCreatedAt(),
+            entry.getUpdatedAt()
         );
     }
 
@@ -256,34 +280,27 @@ public class EntryService {
         String storageKey = null;
         String fileName = null;
         String mimeType = null;
-        ResourceType type;
 
         if (resource instanceof TextResource textResource) {
-            textContent = textResource.getText();
-            type = ResourceType.TEXT;
+            textContent = textResource.getTextContent();
         } else if (resource instanceof LinkResource linkResource) {
             url = linkResource.getUrl();
-            type = ResourceType.LINK;
         } else if (resource instanceof MediaResource mediaResource) {
-            storageKey = mediaResource.getPath();
-            type = ResourceType.MEDIA;
-        } else {
-            throw new ResponseStatusException(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "Unsupported resource type"
-            );
+            storageKey = mediaResource.getStorageKey();
+            fileName = mediaResource.getFileName();
+            mimeType = mediaResource.getMimeType();
         }
 
         return new ResourceResponse(
             resource.getId(),
-            type,
-            null,
+            resource.getType(),
+            resource.getTitle(),
             textContent,
             url,
             storageKey,
             fileName,
             mimeType,
-            resource.getEntry().getCreateDate()
+            resource.getCreatedAt()
         );
     }
 

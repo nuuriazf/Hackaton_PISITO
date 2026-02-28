@@ -1,4 +1,6 @@
-package com.pisito.app.controller.dto;
+package com.pisito.app.controller.dto.entry;
+
+import com.pisito.app.controller.dto.resource.ResourceResponse;
 
 import java.time.Instant;
 import java.util.List;
@@ -11,3 +13,4 @@ public record EntryResponse(
     Instant updatedAt
 ) {
 }
+

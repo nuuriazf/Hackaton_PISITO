@@ -1,16 +1,26 @@
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   datasource:
-    url: jdbc:postgresql://localhost:5432/pisito_db
-    username: pisito_user
-    password: pisito_password
-    driver-class-name: org.postgresql.Driver
-
+    # Local default (H2). For Supabase/Postgres set DB_URL/DB_USERNAME/DB_PASSWORD env vars.
+    url: ${DB_URL:jdbc:h2:mem:pisitodb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    driver-class-name: ${DB_DRIVER_CLASS:org.h2.Driver}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:true}
+    defer-datasource-initialization: ${JPA_DEFER_DATASOURCE_INITIALIZATION:true}
+  sql:
+    init:
+      # Use NEVER with Supabase to avoid running local seed file data.sql there.
+      mode: ${SQL_INIT_MODE:always}
+  h2:
+    console:
+      enabled: ${H2_CONSOLE_ENABLED:true}
+      path: /h2-console
 
 server:
   port: 8080
@@ -26,3 +36,8 @@ spotify:
 app:
   upload:
     dir: uploads
+app:
+  jwt:
+    # Base64-encoded key. Replace in production with APP_JWT_SECRET.
+    secret: ${APP_JWT_SECRET:bXktZGV2LXN1cGVyLXNlY3JldC1rZXktZm9yLWp3dC0zMi1ieXRlcy1taW4=}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}

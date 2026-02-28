@@ -3,9 +3,12 @@ package com.pisito.app.model;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
@@ -27,33 +30,34 @@ public class Entry {
     @Column(nullable = false, length = 120)
     private String title;
 
-    @Column(name = "createDate", nullable = false, updatable = false)
-    private Instant createDate;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
-    @Column(name = "updateDate", nullable = false)
-    private Instant updateDate;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
-    @Column(name = "userId", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private AppUser owner;
 
     @OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("id DESC")
+    @OrderBy("createdAt DESC")
     private List<Resource> resources = new ArrayList<>();
 
     @PrePersist
     public void onCreate() {
         Instant now = Instant.now();
-        if (createDate == null) {
-            createDate = now;
+        if (createdAt == null) {
+            createdAt = now;
         }
-        if (updateDate == null) {
-            updateDate = now;
+        if (updatedAt == null) {
+            updatedAt = now;
         }
     }
 
     @PreUpdate
     public void onUpdate() {
-        updateDate = Instant.now();
+        updatedAt = Instant.now();
     }
 
     public void addResource(Resource resource) {
@@ -69,7 +73,7 @@ public class Entry {
     }
 
     public void touch() {
-        updateDate = Instant.now();
+        updatedAt = Instant.now();
     }
 
     public Long getId() {
@@ -88,28 +92,28 @@ public class Entry {
         this.title = title;
     }
 
-    public Instant getCreateDate() {
-        return createDate;
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreateDate(Instant createDate) {
-        this.createDate = createDate;
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public Instant getUpdateDate() {
-        return updateDate;
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setUpdateDate(Instant updateDate) {
-        this.updateDate = updateDate;
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
-    public Long getUserId() {
-        return userId;
+    public AppUser getOwner() {
+        return owner;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setOwner(AppUser owner) {
+        this.owner = owner;
     }
 
     public List<Resource> getResources() {

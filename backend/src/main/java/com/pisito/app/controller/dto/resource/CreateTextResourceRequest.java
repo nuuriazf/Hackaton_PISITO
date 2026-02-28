@@ -1,4 +1,4 @@
-package com.pisito.app.controller.dto;
+package com.pisito.app.controller.dto.resource;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -28,4 +28,5 @@ public class CreateTextResourceRequest {
         this.textContent = textContent;
     }
 }
+
 
