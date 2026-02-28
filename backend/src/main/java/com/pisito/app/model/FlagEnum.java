@@ -1,17 +1,12 @@
 package com.pisito.app.model;
 
 public enum FlagEnum {
-    TEXT,
-    PHOTO,
+    RAW,
     YOUTUBE,
-    LINK,
     SPOTIFY,
-    TIKTOK,
     TWITCH,
-    FOOD,
-    SPORT,
-    TRAVEL,
-    WEATHER,
-    BOOK,
-    ALARM
+    LINK,
+    TABLE,
+    ENUMERATION,
+    CHECKLIST,    
 }

@@ -30,9 +30,16 @@ server:
 
 ollama:
   base-url: http://localhost:11434
-  model: qwen2.5:7b
+  model: llama3.1:8b
 
+spotify:
+  api-base-url: https://api.spotify.com/v1
+  auth-base-url: https://accounts.spotify.com
+  client-id: ${SPOTIFY_CLIENT_ID:}
+  client-secret: ${SPOTIFY_CLIENT_SECRET:}
 app:
+  upload:
+    dir: uploads
   jwt:
     # Base64-encoded key. Replace in production with APP_JWT_SECRET.
     secret: ${APP_JWT_SECRET:bXktZGV2LXN1cGVyLXNlY3JldC1rZXktZm9yLWp3dC0zMi1ieXRlcy1taW4=}

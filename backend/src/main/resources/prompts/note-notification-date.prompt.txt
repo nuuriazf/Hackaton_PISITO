@@ -1,41 +1,53 @@
 Tarea: extraer UNA fecha/hora de notificacion desde una nota en espanol.
 
-Salida obligatoria (sin excepciones):
-- SOLO una linea con:
-  1) un datetime ISO-8601 con offset (ej: 2026-04-20T09:00:00+02:00)
-  2) o EXACTAMENTE: NONE
-- No anadas texto, comillas, markdown ni explicaciones.
+SALIDA OBLIGATORIA:
+- Devuelve SOLO una linea:
+  1) un datetime ISO-8601 con offset (ej: 2026-04-20T21:00:00+02:00), o
+  2) EXACTAMENTE: NONE
+- Sin explicaciones, sin comillas, sin texto adicional.
 
-Contexto temporal:
-- NOW (zona Europe/Madrid): {{NOW_ISO}}
-- Interpreta expresiones relativas respecto a NOW: hoy, manana, pasado manana, esta tarde, esta noche, el lunes, la semana que viene, etc.
-- Debes razonar con calendario real: si NOW es viernes y la nota dice "el martes que viene", devuelve el proximo martes posterior a NOW.
+Contexto:
+- NOW (Europe/Madrid): {{NOW_ISO}}
+- Calcula ano/mes/dia y offset real (+01:00 / +02:00) en base a NOW y la fecha resultante.
 
-Reglas de interpretacion:
-1) Si hay fecha y hora explicitas, usalas.
-2) Si hay fecha pero no hora, usa 09:00:00.
-3) Si hay hora pero no fecha:
-   - usa hoy si aun no ha pasado esa hora;
-   - si ya paso, usa manana.
-4) Si hay varias fechas, elige la mas probable para "recordatorio" (normalmente la primera instruccion temporal clara).
-5) Si aparece dia y mes sin ano (ej: "20 de abril"), usa el proximo ano/fecha futura valida respecto a NOW.
-6) Devuelve NONE solo si NO hay ninguna referencia temporal razonable.
-7) Para dias de la semana:
-   - "el martes" => el proximo martes futuro respecto a NOW.
-   - "el martes que viene" => tambien el proximo martes futuro (no inventes +14 dias salvo que el texto lo diga explicitamente).
-   - "este martes" => si aun no paso, ese martes; si ya paso, el proximo martes.
-8) Para tramos del dia sin hora exacta:
-   - manana -> 09:00:00
-   - mediodia -> 12:00:00
-   - tarde -> 17:00:00
-   - noche -> 21:00:00
-9) Si hay ambiguedad leve pero existe una interpretacion temporal razonable, devuelve fecha/hora; usa NONE solo cuando no haya ninguna.
+PRIORIDAD DE EXTRACCION (de mayor a menor):
+1) Fecha + hora explicitas (ej: "20/04 a las 18:30", "el 20 de abril a las 7").
+2) Fecha explicita sin hora (usar 09:00:00).
+3) Dia relativo: hoy, manana, pasado manana.
+4) Dia de semana: lunes, martes, miercoles, jueves, viernes, sabado, domingo.
+5) Hora suelta sin fecha (usar hoy si aun no paso; si ya paso, manana).
+6) Contexto semantico de franja (cena, comida, etc.).
+7) NONE solo como ULTIMO recurso cuando no exista ninguna pista temporal util.
 
-Ejemplos de conversion (formato):
-- "avisame manana a las 8" -> YYYY-MM-DDT08:00:00+01:00 (o +02:00 segun DST)
-- "recordarme el 20 de abril" -> YYYY-04-20T09:00:00+02:00
-- "llamar a mama hoy 19:30" -> YYYY-MM-DDT19:30:00+01:00 (o +02:00 segun DST)
-- "el martes que viene revisar facturas" -> YYYY-MM-DDT09:00:00+01:00 (o +02:00 segun DST)
+Reglas concretas:
+- Si hay varias pistas temporales, elige la primera instruccion temporal clara.
+- "dia/mes" sin ano -> proxima fecha futura valida respecto a NOW.
+- Dias de semana:
+  - "martes", "para martes", "el martes", "proximo martes", "martes que viene" => proximo martes futuro.
+  - "este martes" => si no paso todavia, ese martes; si ya paso, el siguiente.
+- Mes:
+   - A no ser que se especifique el mes (Enero, febrero, marzo, ...), solo busca el siguiente día que corresponda del siguiente mes
+- Relativos:
+  - hoy -> fecha de NOW
+  - manana -> NOW + 1 dia
+  - pasado manana -> NOW + 2 dias
+- Si falta hora:
+  - por defecto 09:00:00
+  - pero si el contexto sugiere franja, usar:
+    - desayuno: 08:00:00
+    - comida/almuerzo: 14:00:00
+    - cafe: 17:00:00
+    - tarde: 17:00:00
+    - cena/noche: 21:00:00
+    - dormir/acostarse: 23:00:00
+
+Ejemplos:
+- Martes que viene -> coger el tiempo actual -> calcular cuantos dias faltan -> aplicar offset al now
+- El viernes 28 -> si este mes es mas tarde que 28, se refiere al 28 del mes + 1
+
+Importante:
+- Debes INTENTAR extraer fecha/hora siempre que haya cualquier pista temporal.
+- Usa NONE unicamente si no hay fecha, ni dia, ni hora, ni relativo, ni dia de semana.
 
 NOTA:
 {{NOTE_CONTENT}}

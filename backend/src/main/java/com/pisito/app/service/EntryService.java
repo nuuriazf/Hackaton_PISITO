@@ -1,7 +1,7 @@
 package com.pisito.app.service;
 
-import com.pisito.app.controller.dto.entry.CreateEntryRequest;
 import com.pisito.app.controller.dto.entry.CreateEntryResourceRequest;
+import com.pisito.app.controller.dto.entry.CreateNoteRequest;
 import com.pisito.app.controller.dto.entry.EntryResponse;
 import com.pisito.app.controller.dto.entry.UpdateEntryRequest;
 import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
@@ -18,6 +18,8 @@ import com.pisito.app.model.TextResource;
 import com.pisito.app.repository.EntryRepository;
 import com.pisito.app.repository.ResourceRepository;
 import com.pisito.app.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,20 +31,25 @@ import java.util.List;
 @Service
 public class EntryService {
 
+    private static final Logger log = LoggerFactory.getLogger(EntryService.class);
+
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
     private final OllamaTitleService ollamaTitleService;
+    private final SpotifySongLinkService spotifySongLinkService;
     private final UserRepository userRepository;
 
     public EntryService(
         EntryRepository entryRepository,
         ResourceRepository resourceRepository,
         OllamaTitleService ollamaTitleService,
+        SpotifySongLinkService spotifySongLinkService,
         UserRepository userRepository
     ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
         this.ollamaTitleService = ollamaTitleService;
+        this.spotifySongLinkService = spotifySongLinkService;
         this.userRepository = userRepository;
     }
 
@@ -59,12 +66,12 @@ public class EntryService {
     }
 
     @Transactional
-    public EntryResponse createEntry(Long userId, CreateEntryRequest request) {
+    public EntryResponse createEntry(Long userId, CreateNoteRequest request) {
         AppUser user = getUserOrThrow(userId);
 
         Entry entry = new Entry();
         entry.setUser(user);
-        entry.setFlag(request.getFlag() != null ? request.getFlag() : FlagEnum.TEXT);
+        entry.setFlag(request.getFlag() != null ? request.getFlag() : FlagEnum.RAW);
 
         String firstTextContent = null;
         StringBuilder allTextContent = new StringBuilder();
@@ -98,11 +105,22 @@ public class EntryService {
         }
         entry.setTitle(trimRequired(title, "title is required"));
 
-        if (entry.getFlag() == FlagEnum.ALARM) {
+        if (request.getNotification()) {
             String notificationContext = allTextContent.isEmpty() ? title : allTextContent.toString();
             entry.setNotificationDate(ollamaTitleService.extractNotificationDate(notificationContext).orElse(null));
+            log.info("createEntry extracted notificationDate={}", entry.getNotificationDate());
         } else {
+            log.info("createEntry notification=false userId={} flag={}", userId, entry.getFlag());
             entry.setNotificationDate(null);
+        }
+
+        if (request.getFlag() == FlagEnum.SPOTIFY && StringUtils.hasText(firstTextContent)) {
+            spotifySongLinkService.findSongLinkForNote(firstTextContent).ifPresent(link -> {
+                LinkResource songLink = new LinkResource();
+                songLink.setTitle("Cancion sugerida");
+                songLink.setUrl(link);
+                entry.addResource(songLink);
+            });
         }
 
         return toEntryResponse(entryRepository.save(entry));
@@ -148,8 +166,8 @@ public class EntryService {
         if (!resource.getEntry().getId().equals(entryId) || !resource.getEntry().getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
-        Entry entry = resource.getEntry();
-        entry.removeResource(resource);
+        Entry parent = resource.getEntry();
+        parent.removeResource(resource);
     }
 
     @Transactional
@@ -170,12 +188,10 @@ public class EntryService {
         }
 
         return switch (request.getType()) {
-            case TEXT -> {
+            case RAW -> {
                 TextResource resource = new TextResource();
                 resource.setTitle(trimOrNull(request.getTitle()));
-                resource.setTextContent(
-                    trimRequired(request.getTextContent(), "textContent is required for TEXT")
-                );
+                resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required for RAW"));
                 yield resource;
             }
             case LINK -> {
@@ -187,9 +203,7 @@ public class EntryService {
             case MEDIA -> {
                 MediaResource resource = new MediaResource();
                 resource.setTitle(trimOrNull(request.getTitle()));
-                resource.setStorageKey(
-                    trimRequired(request.getStorageKey(), "storageKey is required for MEDIA")
-                );
+                resource.setStorageKey(trimRequired(request.getStorageKey(), "storageKey is required for MEDIA"));
                 resource.setFileName(trimOrNull(request.getFileName()));
                 resource.setMimeType(trimOrNull(request.getMimeType()));
                 yield resource;
