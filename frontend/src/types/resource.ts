@@ -24,6 +24,7 @@ export type ResourceItem = {
 export type EntryItem = {
   id: number;
   title: string;
+  flag: EntryFlag;
   resources: ResourceItem[];
   createdAt: string;
   updatedAt: string;

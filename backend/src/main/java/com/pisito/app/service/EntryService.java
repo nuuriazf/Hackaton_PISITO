@@ -309,6 +309,7 @@ public class EntryService {
         return new EntryResponse(
             entry.getId(),
             entry.getTitle(),
+            entry.getFlag(),
             resources,
             tags,
             entry.getCreateDate(),

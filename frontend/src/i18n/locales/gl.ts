@@ -61,6 +61,7 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "storage.editFieldAria": "Editar campo",
   "storage.detailEntryTitle": "Titulo",
   "storage.detailDescription": "Descripcion",
+  "storage.detailTable": "Táboa",
   "storage.detailTodoList": "Todo list",
   "storage.detailAttachments": "Arquivos anexos",
   "storage.detailNoAttachments": "Sen arquivos anexos",
