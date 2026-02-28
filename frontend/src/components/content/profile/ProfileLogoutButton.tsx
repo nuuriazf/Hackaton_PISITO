@@ -1,4 +1,4 @@
-import { dangerButtonClass } from "../../ui/styles";
+import { Button } from "../../ui/Button";
 
 type ProfileLogoutButtonProps = {
   onLogout: () => void;
@@ -6,8 +6,8 @@ type ProfileLogoutButtonProps = {
 
 export function ProfileLogoutButton({ onLogout }: ProfileLogoutButtonProps) {
   return (
-    <button type="button" className={`${dangerButtonClass} mt-2 w-full`} onClick={onLogout}>
-      Cerrar sesion
-    </button>
+    <Button type="button" variant="danger" className="mt-2" onClick={onLogout}>
+      Cerrar sesión
+    </Button>
   );
 }

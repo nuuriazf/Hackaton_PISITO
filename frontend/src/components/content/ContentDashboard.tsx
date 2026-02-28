@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
+import { InboxArrowDownIcon, UserIcon } from "@heroicons/react/24/outline";
+import { useLocation, useNavigate } from "react-router-dom";
 import { validatePassword, validateUsername } from "../../features/auth/formValidation";
 import type { UpdatePasswordInput, UpdateUsernameInput } from "../../types/auth";
 import { errorTextClass, inputClass } from "../ui/styles";
@@ -20,7 +22,7 @@ type DashboardSection = "left" | "dashboard" | "profile";
 type ProfileFormSection = "username" | "password";
 
 const footerButtonBaseClass =
-  "h-full flex-1 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70";
+  "flex h-full flex-1 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70";
 
 function footerButtonClass(active: boolean, withRightBorder: boolean) {
   return [
@@ -41,7 +43,11 @@ export function ContentDashboard({
   onClearError,
   onLogout
 }: ContentDashboardProps) {
-  const [activeSection, setActiveSection] = useState<DashboardSection>("dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState<DashboardSection>(
+    location.pathname === "/profile" ? "profile" : "dashboard"
+  );
   const [centerInputValue, setCenterInputValue] = useState("");
 
   const [usernameDraft, setUsernameDraft] = useState(username);
@@ -57,6 +63,16 @@ export function ContentDashboard({
   useEffect(() => {
     setUsernameDraft(username);
   }, [username]);
+
+  useEffect(() => {
+    setActiveSection((currentSection) => {
+      if (currentSection === "left") {
+        return currentSection;
+      }
+
+      return location.pathname === "/profile" ? "profile" : "dashboard";
+    });
+  }, [location.pathname]);
 
   function resetProfileFeedback() {
     setUsernameValidationError(null);
@@ -142,14 +158,23 @@ export function ContentDashboard({
   }
 
   function changeSection(nextSection: DashboardSection) {
-    setActiveSection(nextSection);
     resetProfileFeedback();
+    setActiveSection(nextSection);
+
+    if (nextSection === "dashboard" && location.pathname !== "/dashboard") {
+      navigate("/dashboard");
+      return;
+    }
+
+    if (nextSection === "profile" && location.pathname !== "/profile") {
+      navigate("/profile");
+    }
   }
 
   return (
     <section className="flex min-h-screen flex-col bg-gradient-to-br from-brand-100 via-brand-50 to-brand-200">
       <header className="flex h-16 items-center justify-between border-b border-brand-200 bg-white/85 px-4 backdrop-blur-sm sm:px-6">
-        <h1 className="text-lg font-extrabold tracking-tight text-ink-900">Pisito</h1>
+        <h1 className="text-lg font-extrabold tracking-tight text-ink-900">Digital Brain</h1>
         <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-sm text-brand-700">
           @{username}
         </span>
@@ -161,7 +186,6 @@ export function ContentDashboard({
             <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
               <div className="mb-4">
                 <h2 className="text-2xl font-extrabold tracking-tight text-ink-900">Perfil</h2>
-                <p className="text-sm text-ink-600">Edita tu nombre de usuario</p>
               </div>
               <ProfileUsernameForm
                 usernameValue={usernameDraft}
@@ -190,7 +214,6 @@ export function ContentDashboard({
             <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
               <div className="mb-4">
                 <h2 className="text-xl font-extrabold tracking-tight text-ink-900">Contrasena</h2>
-                <p className="text-sm text-ink-600">Debes indicar la contrasena actual para cambiarla</p>
               </div>
               <ProfilePasswordForm
                 currentPasswordValue={passwordCurrent}
@@ -250,15 +273,17 @@ export function ContentDashboard({
             type="button"
             className={footerButtonClass(activeSection === "dashboard", true)}
             onClick={() => changeSection("dashboard")}
+            aria-label="Dashboard"
           >
-            Dashboard
+            <InboxArrowDownIcon className="h-7 w-7" />
           </button>
           <button
             type="button"
             className={footerButtonClass(activeSection === "profile", false)}
             onClick={() => changeSection("profile")}
+            aria-label="Perfil"
           >
-            Perfil
+            <UserIcon className="h-7 w-7" />
           </button>
         </div>
       </footer>

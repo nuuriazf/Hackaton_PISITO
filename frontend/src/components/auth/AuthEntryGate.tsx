@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ArrowUpRightIcon } from "@heroicons/react/24/outline";
 import { buttonClass } from "../ui/Button";
 
 export function AuthEntryGate() {
@@ -9,12 +10,9 @@ export function AuthEntryGate() {
       </div>
 
       <header className="mb-6 text-center sm:mb-8">
-        <h1 className="mb-1 text-[2rem] font-extrabold leading-[1.07] tracking-[-0.03em] text-ink-900 sm:text-[2.4rem]">
-          Tu segundo cerebro
+        <h1 className="mb-5 text-[2rem] font-extrabold leading-[1.07] tracking-[-0.03em] text-ink-900 sm:mb-6 sm:text-[2.4rem]">
+          Digital Brain
         </h1>
-        <p className="mb-5 text-[2rem] font-extrabold leading-[1.07] tracking-[-0.03em] text-brand-400 sm:mb-6 sm:text-[2.4rem]">
-          Sin esfuerzo
-        </p>
 
         <p className="text-base leading-relaxed text-ink-600 sm:text-[1.05rem]">
           Guarda lo que importa y sigue con tu vida, todo queda en su lugar para cuando lo necesites
@@ -30,9 +28,10 @@ export function AuthEntryGate() {
         </Link>
         <Link
           to="/register"
-          className={buttonClass({ variant: "secondary", size: "lg" })}
+          className={buttonClass({ variant: "secondary", size: "lg", className: "gap-2" })}
         >
-          Registrarse
+          <span>Registrarse</span>
+          <ArrowUpRightIcon className="h-4 w-4" />
         </Link>
       </div>
     </section>

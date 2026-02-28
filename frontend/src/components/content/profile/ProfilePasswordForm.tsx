@@ -1,5 +1,6 @@
 import { FormEventHandler } from "react";
-import { inputClass, primaryButtonClass } from "../../ui/styles";
+import { Button } from "../../ui/Button";
+import { inputClass } from "../../ui/styles";
 
 type ProfilePasswordFormProps = {
   currentPasswordValue: string;
@@ -28,7 +29,7 @@ export function ProfilePasswordForm({
         value={currentPasswordValue}
         disabled={submitting}
         className={inputClass}
-        placeholder="Contrasena actual"
+        placeholder="Contraseña actual"
         onChange={(event) => onCurrentPasswordChange(event.target.value)}
       />
       <input
@@ -38,12 +39,12 @@ export function ProfilePasswordForm({
         value={newPasswordValue}
         disabled={submitting}
         className={inputClass}
-        placeholder="Nueva contrasena"
+        placeholder="Nueva contraseña"
         onChange={(event) => onNewPasswordChange(event.target.value)}
       />
-      <button type="submit" className={primaryButtonClass} disabled={submitting}>
-        {submitting ? "Guardando..." : "Guardar contrasena"}
-      </button>
+      <Button type="submit" variant="primary" disabled={submitting}>
+        {submitting ? "Guardando..." : "Guardar contraseña"}
+      </Button>
     </form>
   );
 }

@@ -10,22 +10,44 @@
 
 @layer components {
   .btn-fill-anim {
-    background-image: linear-gradient(to right, var(--btn-fill), var(--btn-fill));
+    background-image: linear-gradient(to right, var(--btn-fill) 50%, transparent 50%);
     background-repeat: no-repeat;
-    background-position: left top;
-    background-size: 0% 100%;
+    background-size: 200% 100%;
+    background-position: right top;
     transition:
-      background-size 280ms ease,
+      background-position 280ms ease,
       background-color 280ms ease,
       color 280ms ease,
-      border-color 280ms ease;
+      border-color 280ms ease,
+      transform 120ms ease,
+      filter 120ms ease,
+      box-shadow 120ms ease;
   }
 
-  .btn-fill-anim:hover {
-    background-size: 100% 100%;
+  /* Desktop: animate on hover */
+  @media (hover: hover) and (pointer: fine) {
+    .btn-fill-anim:hover {
+      background-position: left top;
+      color: var(--btn-text-hover, currentColor);
+    }
+
+    .btn-fill-anim:disabled:hover {
+      background-position: right top;
+    }
   }
 
-  .btn-fill-anim:disabled:hover {
-    background-size: 0% 100%;
+  /* Touch devices: clear tactile feedback on press */
+  @media (hover: none), (pointer: coarse) {
+    .btn-fill-anim:active {
+      transform: translateY(1px) scale(0.985);
+      filter: brightness(0.96);
+      box-shadow: inset 0 0 0 9999px rgb(255 255 255 / 0.08);
+    }
+  }
+
+  /* Keyboard accessibility */
+  .btn-fill-anim:focus-visible {
+    background-position: left top;
+    color: var(--btn-text-hover, currentColor);
   }
 }

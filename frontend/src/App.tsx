@@ -121,6 +121,25 @@ function App() {
           }
         />
 
+        <Route
+          path="/profile"
+          element={
+            auth.authUser ? (
+              <ContentDashboard
+                username={auth.authUser.username}
+                submitting={auth.authSubmitting}
+                error={auth.authError}
+                onUpdateUsername={auth.updateUsernameUser}
+                onUpdatePassword={auth.updatePasswordUser}
+                onClearError={auth.clearAuthError}
+                onLogout={auth.logout}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>

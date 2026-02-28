@@ -15,7 +15,7 @@ const baseButtonClass =
 
 const variantClassMap: Record<ButtonVariant, string> = {
   primary: "border-transparent bg-brand-500 text-white [--btn-fill:#0073D1]",
-  secondary: "border-brand-200 bg-white text-brand-700 shadow-sm [--btn-fill:#4D82BC] hover:text-white",
+  secondary: "border-brand-200 bg-white text-brand-700 shadow-sm [--btn-fill:#4D82BC] [--btn-text-hover:#ffffff]",
   ghost: "border-brand-200 bg-brand-50 text-brand-600 [--btn-fill:#B8DFFF]",
   neutral: "border-transparent bg-white text-ink-900 shadow-sm [--btn-fill:#E6F4FF]",
   danger: "border-transparent bg-rose-600 text-white [--btn-fill:#BE123C]"

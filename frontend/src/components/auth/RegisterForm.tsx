@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
+import { ArrowLongLeftIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { validatePassword, validateUsername } from "../../features/auth/formValidation";
 import type { AuthCredentials } from "../../types/auth";
@@ -64,13 +65,14 @@ export function RegisterForm({ submitting, error, onSubmit }: RegisterFormProps)
         <div className="flex justify-start">
           <Link
             to="/"
+            aria-label="Volver"
             className={buttonClass({
               variant: "ghost",
               fullWidth: false,
-              className: "px-3 py-2 text-sm font-medium"
+              className: "px-2.5 py-2 text-brand-200 hover:text-brand-200"
             })}
           >
-            Ir atras
+            <ArrowLongLeftIcon className="h-6 w-6" />
           </Link>
         </div>
 

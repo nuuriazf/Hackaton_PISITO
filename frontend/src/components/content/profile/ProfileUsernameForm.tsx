@@ -1,5 +1,6 @@
 import { FormEventHandler } from "react";
-import { inputClass, primaryButtonClass } from "../../ui/styles";
+import { Button } from "../../ui/Button";
+import { inputClass } from "../../ui/styles";
 
 type ProfileUsernameFormProps = {
   usernameValue: string;
@@ -20,7 +21,7 @@ export function ProfileUsernameForm({
 }: ProfileUsernameFormProps) {
   return (
     <form className="grid gap-2.5" onSubmit={onSubmit}>
-      <h3 className="text-sm font-bold text-ink-800">Cambiar usuario</h3>
+      <h3 className="text-sm font-bold text-ink-800">Cambiar nombre de usuario</h3>
       <input
         type="text"
         minLength={3}
@@ -38,12 +39,12 @@ export function ProfileUsernameForm({
         value={currentPasswordValue}
         disabled={submitting}
         className={inputClass}
-        placeholder="Contrasena actual"
+        placeholder="Contraseña actual"
         onChange={(event) => onCurrentPasswordChange(event.target.value)}
       />
-      <button type="submit" className={primaryButtonClass} disabled={submitting}>
+      <Button type="submit" variant="primary" disabled={submitting}>
         {submitting ? "Guardando..." : "Guardar usuario"}
-      </button>
+      </Button>
     </form>
   );
 }
