@@ -8,9 +8,9 @@ import java.util.Optional;
 
 public interface FolderRepository extends JpaRepository<Folder, Long> {
 
-    List<Folder> findAllByOwnerIdOrderByTitleAsc(Long ownerId);
+    List<Folder> findAllByUserIdOrderByTitleAsc(Long userId);
 
-    Optional<Folder> findByIdAndOwnerId(Long id, Long ownerId);
+    Optional<Folder> findByIdAndUserId(Long id, Long userId);
 
-    boolean existsByOwnerIdAndTitleIgnoreCase(Long ownerId, String title);
+    boolean existsByUserIdAndTitleIgnoreCase(Long userId, String title);
 }

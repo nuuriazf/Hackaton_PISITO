@@ -3,7 +3,6 @@ package com.pisito.app.controller.dto.entry;
 import java.util.ArrayList;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import com.pisito.app.model.FlagEnum;
@@ -16,7 +15,7 @@ public class CreateNoteRequest {
     @Valid
     private List<CreateEntryResourceRequest> resources = new ArrayList<>();
 
-    private FlagEnum flag = FlagEnum.TEXT;
+    private FlagEnum flag = FlagEnum.RAW;
 
     @Valid
     private Boolean notification = false;
