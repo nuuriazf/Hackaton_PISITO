@@ -87,6 +87,7 @@ export const EN_MESSAGES: Record<I18nKey, string> = {
   "storage.entryFoldersLoading": "Loading folders...",
   "storage.entryFoldersEmpty": "There are no folders to assign.",
   "storage.detailSaved": "Changes saved.",
+  "storage.tags": "Tags",
   "profile.title": "Profile",
   "profile.username": "Username",
   "profile.password": "Password",

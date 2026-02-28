@@ -83,6 +83,7 @@ export const ES_MESSAGES = {
   "storage.entryFoldersLoading": "Cargando carpetas...",
   "storage.entryFoldersEmpty": "No hay carpetas para asignar.",
   "storage.detailSaved": "Cambios guardados.",
+  "storage.tags": "Etiquetas",
   "profile.title": "Perfil",
   "profile.username": "Nombre de usuario",
   "profile.password": "Contraseña",
