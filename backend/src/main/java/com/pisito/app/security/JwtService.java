@@ -1,6 +1,6 @@
 package com.pisito.app.security;
 
-import com.pisito.app.model.AppUser;
+import com.pisito.app.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -28,12 +28,11 @@ public class JwtService {
         this.expirationMillis = expirationMillis;
     }
 
-    public String generateToken(AppUser user) {
+    public String generateToken(User user) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusMillis(expirationMillis);
 
         Map<String, Object> claims = new HashMap<>();
-        claims.put("pwdAt", user.getPasswordUpdatedAt().toEpochMilli());
         claims.put("username", user.getUsername());
 
         return Jwts.builder()
@@ -54,16 +53,12 @@ public class JwtService {
         return subject == null ? null : Long.parseLong(subject);
     }
 
-    public boolean isTokenValid(String token, AppUser user) {
+    public boolean isTokenValid(String token, User user) {
         Claims claims = extractAllClaims(token);
         Long tokenUserId = claims.getSubject() == null ? null : Long.parseLong(claims.getSubject());
-        Long tokenPasswordUpdatedAt = claims.get("pwdAt", Long.class);
-        long currentPasswordUpdatedAt = user.getPasswordUpdatedAt().toEpochMilli();
 
         return tokenUserId != null
             && tokenUserId.equals(user.getId())
-            && tokenPasswordUpdatedAt != null
-            && tokenPasswordUpdatedAt == currentPasswordUpdatedAt
             && claims.getExpiration() != null
             && claims.getExpiration().after(new Date());
     }

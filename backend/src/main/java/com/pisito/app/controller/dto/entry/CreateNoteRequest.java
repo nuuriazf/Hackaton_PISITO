@@ -17,11 +17,12 @@ public class CreateNoteRequest {
     @Valid
     private List<CreateEntryResourceRequest> resources = new ArrayList<>();
 
-    @NotNull
-    private FlagEnum flag;
+    private FlagEnum flag = FlagEnum.TEXT;
 
     @Valid
     private Boolean notification = false;
+
+    private List<Long> tagIds = new ArrayList<>();
 
     public String getTitle() {
         return title;
@@ -53,5 +54,13 @@ public class CreateNoteRequest {
 
     public void setFlag(FlagEnum flag) {
         this.flag = flag;
+    }
+
+    public List<Long> getTagIds() {
+        return tagIds;
+    }
+
+    public void setTagIds(List<Long> tagIds) {
+        this.tagIds = tagIds == null ? new ArrayList<>() : tagIds;
     }
 }

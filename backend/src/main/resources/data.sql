@@ -1,5 +1,5 @@
-INSERT INTO app_users (id, username, password, created_at, updated_at, password_updated_at, last_login_at) VALUES
-(100, 'demo_user', 'seed_hash_replace_me', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL);
+INSERT INTO users (id, username, password) VALUES
+(100, 'demo_user', '$2a$10$HfLBZNMQCT95Hg5IBqI4J.CVrHW6CakFGVFLfg6sVFFhEJ5bLPu9q');
 
 INSERT INTO entries (id, owner_id, title, created_at, updated_at) VALUES
 (100, 100, 'Ideas de producto', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -20,3 +20,14 @@ INSERT INTO link_resources (id, url) VALUES
 INSERT INTO media_resources (id, storage_key, file_name, mime_type) VALUES
 (102, 'videos/demo.mp4', 'demo.mp4', 'video/mp4'),
 (103, 'images/demo-image.png', 'demo-image.png', 'image/png');
+
+INSERT INTO tags (id, name, created_at) VALUES
+(100, 'importante', CURRENT_TIMESTAMP),
+(101, 'trabajo', CURRENT_TIMESTAMP),
+(102, 'personal', CURRENT_TIMESTAMP),
+(103, 'urgente', CURRENT_TIMESTAMP);
+
+INSERT INTO entry_tags (entry_id, tag_id) VALUES
+(100, 100),
+(100, 101),
+(101, 102);

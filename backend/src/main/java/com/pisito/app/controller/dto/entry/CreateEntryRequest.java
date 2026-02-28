@@ -16,6 +16,8 @@ public class CreateEntryRequest {
     @Valid
     private List<CreateEntryResourceRequest> resources = new ArrayList<>();
 
+    private List<Long> tagIds = new ArrayList<>();
+
     public String getTitle() {
         return title;
     }
@@ -30,6 +32,14 @@ public class CreateEntryRequest {
 
     public void setResources(List<CreateEntryResourceRequest> resources) {
         this.resources = resources == null ? new ArrayList<>() : resources;
+    }
+
+    public List<Long> getTagIds() {
+        return tagIds;
+    }
+
+    public void setTagIds(List<Long> tagIds) {
+        this.tagIds = tagIds == null ? new ArrayList<>() : tagIds;
     }
 }
 

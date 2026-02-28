@@ -8,6 +8,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
@@ -38,11 +40,19 @@ public class Entry {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
-    private AppUser owner;
+    private User owner;
 
     @OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt DESC")
     private List<Resource> resources = new ArrayList<>();
+
+    @ManyToMany(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "entry_tags",
+        joinColumns = @JoinColumn(name = "entry_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private List<Tag> tags = new ArrayList<>();
 
     @Column(name = "notification_date")
     private Instant notificationDate;
@@ -73,6 +83,16 @@ public class Entry {
         resources.remove(resource);
         resource.setEntry(null);
         touch();
+    }
+
+    public void addTag(Tag tag) {
+        tags.add(tag);
+        tag.getEntries().add(this);
+    }
+
+    public void removeTag(Tag tag) {
+        tags.remove(tag);
+        tag.getEntries().remove(this);
     }
 
     public void touch() {
@@ -111,11 +131,11 @@ public class Entry {
         this.updatedAt = updatedAt;
     }
 
-    public AppUser getOwner() {
+    public User getOwner() {
         return owner;
     }
 
-    public void setOwner(AppUser owner) {
+    public void setOwner(User owner) {
         this.owner = owner;
     }
 
@@ -133,5 +153,13 @@ public class Entry {
 
     public void setNotificationDate(Instant notificationDate) {
         this.notificationDate = notificationDate;
+    }
+
+    public List<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<Tag> tags) {
+        this.tags = tags;
     }
 }

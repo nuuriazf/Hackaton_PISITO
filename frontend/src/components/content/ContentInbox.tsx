@@ -250,7 +250,9 @@ export function ContentInbox({
 
       await createEntry({
         title,
-        resources
+        resources,
+        flag: inboxEntryForm.selectedPrimaryOption === "spotify" ? "SPOTIFY" : inboxEntryForm.selectedPrimaryOption === "youtube" ? "YOUTUBE" : "TEXT",
+        notification: inboxEntryForm.alarmEnabled
       });
 
       setInboxEntryForm(INITIAL_INBOX_ENTRY_FORM);

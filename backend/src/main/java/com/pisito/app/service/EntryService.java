@@ -8,15 +8,18 @@ import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateMediaResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.resource.ResourceResponse;
-import com.pisito.app.model.AppUser;
+import com.pisito.app.controller.dto.tag.TagResponse;
+import com.pisito.app.model.User;
 import com.pisito.app.model.Entry;
 import com.pisito.app.model.FlagEnum;
 import com.pisito.app.model.LinkResource;
 import com.pisito.app.model.MediaResource;
 import com.pisito.app.model.Resource;
+import com.pisito.app.model.Tag;
 import com.pisito.app.model.TextResource;
 import com.pisito.app.repository.EntryRepository;
 import com.pisito.app.repository.ResourceRepository;
+import com.pisito.app.repository.TagRepository;
 import com.pisito.app.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -32,20 +36,26 @@ public class EntryService {
 
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
+    private final TagRepository tagRepository;
     private final OllamaTitleService ollamaTitleService;
+    private final OllamaTagsService ollamaTagsService;
     private final SpotifySongLinkService spotifySongLinkService;
     private final UserRepository userRepository;
 
     public EntryService(
         EntryRepository entryRepository,
         ResourceRepository resourceRepository,
+        TagRepository tagRepository,
         OllamaTitleService ollamaTitleService,
+        OllamaTagsService ollamaTagsService,
         SpotifySongLinkService spotifySongLinkService,
         UserRepository userRepository
     ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
+        this.tagRepository = tagRepository;
         this.ollamaTitleService = ollamaTitleService;
+        this.ollamaTagsService = ollamaTagsService;
         this.spotifySongLinkService = spotifySongLinkService;
         this.userRepository = userRepository;
     }
@@ -107,6 +117,23 @@ public class EntryService {
                 songLink.setUrl(link);
                 entry.addResource(songLink);
             });
+        }
+
+        // Manejar tags - IA siempre sugiere basada en contenido
+        List<Tag> allTags = tagRepository.findAll();
+        List<String> existingTagNames = allTags.stream().map(Tag::getName).toList();
+        
+        String contentForTags = entry.getTitle() + "\n" + baseContext;
+        List<String> suggestedTagNames = ollamaTagsService.suggestTags(contentForTags, existingTagNames);
+        
+        for (String tagName : suggestedTagNames) {
+            Tag tag = tagRepository.findByName(tagName)
+                .orElseGet(() -> {
+                    Tag newTag = new Tag();
+                    newTag.setName(tagName);
+                    return tagRepository.save(newTag);
+                });
+            entry.addTag(tag);
         }
 
         return toEntryResponse(entryRepository.save(entry));
@@ -202,7 +229,7 @@ public class EntryService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
     }
 
-    private AppUser getUserOrThrow(Long userId) {
+    private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
@@ -217,10 +244,15 @@ public class EntryService {
             .map(this::toResourceResponse)
             .toList();
 
+        List<TagResponse> tags = entry.getTags().stream()
+            .map(tag -> new TagResponse(tag.getId(), tag.getName(), tag.getCreatedAt()))
+            .toList();
+
         return new EntryResponse(
             entry.getId(),
             entry.getTitle(),
             resources,
+            tags,
             entry.getCreatedAt(),
             entry.getUpdatedAt()
         );
