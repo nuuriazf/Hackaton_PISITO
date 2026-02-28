@@ -1,0 +1,29 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo degradado -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo redondeado -->
+  <rect width="128" height="128" rx="24" ry="24" fill="url(#bgGradient)" />
+
+  <!-- Icono de documento/entry -->
+  <g transform="translate(32, 32)">
+    <!-- Página blanca -->
+    <rect x="8" y="4" width="48" height="56" rx="2" ry="2" fill="white" />
+
+    <!-- Líneas de texto -->
+    <line x1="16" y1="16" x2="48" y2="16" stroke="#6366f1" stroke-width="2" stroke-linecap="round" />
+    <line x1="16" y1="28" x2="48" y2="28" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" opacity="0.7" />
+    <line x1="16" y1="36" x2="40" y2="36" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" opacity="0.7" />
+    <line x1="16" y1="44" x2="48" y2="44" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" opacity="0.7" />
+
+    <!-- Símbolo + en la esquina inferior derecha -->
+    <circle cx="48" cy="48" r="12" fill="white" stroke="#ef4444" stroke-width="2" />
+    <line x1="48" y1="42" x2="48" y2="54" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
+    <line x1="42" y1="48" x2="54" y2="48" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
+  </g>
+</svg>

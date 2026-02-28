@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PISITO - Crear Entry</title>
+    <link rel="stylesheet" href="styles/popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <div class="popup-header">
+            <h1>📝 PISITO Entry</h1>
+            <button id="close-btn" class="close-btn">&times;</button>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Guardando...</p>
+        </div>
+
+        <div id="success" class="success hidden">
+            <div class="success-icon">✓</div>
+            <p>¡Entry creada exitosamente!</p>
+        </div>
+
+        <form id="entry-form" class="form">
+            <!-- Información de la página (automática) -->
+            <div class="form-group">
+                <label for="page-url">Página origen</label>
+                <input type="text" id="page-url" readonly class="readonly">
+            </div>
+
+            <div class="form-group">
+                <label for="page-title">Título de la página</label>
+                <input type="text" id="page-title" readonly class="readonly">
+            </div>
+
+            <!-- Tipo de recurso -->
+            <div class="form-group">
+                <label for="resource-type">Tipo de recurso</label>
+                <select id="resource-type" required>
+                    <option value="">Selecciona un tipo...</option>
+                    <option value="TEXT">📄 Texto</option>
+                    <option value="LINK">🔗 Enlace</option>
+                    <option value="MEDIA">🎥 Media (Imagen/Video)</option>
+                </select>
+            </div>
+
+            <!-- Recurso TEXT -->
+            <div id="text-resource" class="resource-type-section hidden">
+                <div class="form-group">
+                    <label for="text-content">Contenido de texto</label>
+                    <textarea id="text-content" placeholder="Escribe o pega el contenido aquí..." rows="4"></textarea>
+                </div>
+            </div>
+
+            <!-- Recurso LINK -->
+            <div id="link-resource" class="resource-type-section hidden">
+                <div class="form-group">
+                    <label for="link-url">URL del enlace</label>
+                    <input type="url" id="link-url" placeholder="https://ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label for="link-name">Nombre del enlace</label>
+                    <input type="text" id="link-name" placeholder="Mi enlace favorito">
+                </div>
+            </div>
+
+            <!-- Recurso MEDIA -->
+            <div id="media-resource" class="resource-type-section hidden">
+                <div class="form-group">
+                    <label for="media-url">URL del media</label>
+                    <input type="url" id="media-url" placeholder="https://ejemplo.com/imagen.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="media-name">Nombre/Descripción</label>
+                    <input type="text" id="media-name" placeholder="Descripción del media">
+                </div>
+            </div>
+
+            <!-- Título de la Entry (requerido) -->
+            <div class="form-group">
+                <label for="entry-title">Título de la Entry</label>
+                <input type="text" id="entry-title" required placeholder="¿De qué trata esto?">
+            </div>
+
+            <!-- Descripción -->
+            <div class="form-group">
+                <label for="entry-description">Descripción (opcional)</label>
+                <textarea id="entry-description" placeholder="Notas adicionales..." rows="2"></textarea>
+            </div>
+
+            <!-- API URL (se obtiene de storage) -->
+            <div class="form-group hidden">
+                <input type="hidden" id="api-url" value="">
+            </div>
+
+            <!-- Botones -->
+            <div class="form-actions">
+                <button type="reset" class="btn btn-secondary">Limpiar</button>
+                <button type="submit" class="btn btn-primary">Crear Entry</button>
+            </div>
+        </form>
+
+        <div id="error-message" class="error hidden"></div>
+
+        <div class="config-link">
+            <small>⚙️ <a href="options.html" target="_blank">Configurar API</a></small>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
