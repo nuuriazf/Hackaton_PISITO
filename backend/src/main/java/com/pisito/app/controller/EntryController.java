@@ -1,7 +1,6 @@
 package com.pisito.app.controller;
 
-import com.pisito.app.controller.dto.CreateNoteRequest;
-import com.pisito.app.controller.dto.entry.CreateEntryRequest;
+import com.pisito.app.controller.dto.entry.CreateNoteRequest;
 import com.pisito.app.controller.dto.entry.EntryResponse;
 import com.pisito.app.controller.dto.entry.UpdateEntryRequest;
 import com.pisito.app.service.EntryService;
@@ -44,15 +43,9 @@ public class EntryController {
     @ResponseStatus(HttpStatus.CREATED)
     public EntryResponse createEntry(
         Authentication authentication,
-        @Valid @RequestBody CreateEntryRequest request
+        @Valid @RequestBody CreateNoteRequest request
     ) {
         return entryService.createEntry(currentUserId(authentication), request);
-    }
-
-    @PostMapping("/notes")
-    @ResponseStatus(HttpStatus.CREATED)
-    public EntryResponse createNote(@Valid @RequestBody CreateNoteRequest request) {
-        return entryService.createNote(request);
     }
 
     @PutMapping("/{entryId}")

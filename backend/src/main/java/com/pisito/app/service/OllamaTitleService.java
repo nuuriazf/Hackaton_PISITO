@@ -10,9 +10,15 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -24,17 +30,20 @@ public class OllamaTitleService {
 
     private final RestClient restClient;
     private final String model;
-    private final Resource promptTemplateResource;
+    private final Resource titlePromptTemplateResource;
+    private final Resource notificationPromptTemplateResource;
 
     public OllamaTitleService(
         RestClient.Builder restClientBuilder,
         @Value("${ollama.base-url:http://localhost:11434}") String baseUrl,
         @Value("${ollama.model:llama3.1}") String model,
-        @Value("classpath:prompts/note-title.prompt.txt") Resource promptTemplateResource
+        @Value("classpath:prompts/note-title.prompt.txt") Resource titlePromptTemplateResource,
+        @Value("classpath:prompts/note-notification-date.prompt.txt") Resource notificationPromptTemplateResource
     ) {
         this.restClient = restClientBuilder.baseUrl(baseUrl).build();
         this.model = model;
-        this.promptTemplateResource = promptTemplateResource;
+        this.titlePromptTemplateResource = titlePromptTemplateResource;
+        this.notificationPromptTemplateResource = notificationPromptTemplateResource;
     }
 
     public String generateTitle(String noteContent) {
@@ -77,11 +86,76 @@ public class OllamaTitleService {
     }
 
     private String buildPrompt(String noteContent) {
-        String template = loadPromptTemplate();
+        String template = loadPromptTemplate(titlePromptTemplateResource);
         return template.replace("{{NOTE_CONTENT}}", noteContent);
     }
 
-    private String loadPromptTemplate() {
+    public Optional<Instant> extractNotificationDate(String noteContent) {
+        String trimmedContent = noteContent == null ? "" : noteContent.trim();
+        if (!StringUtils.hasText(trimmedContent)) {
+            return Optional.empty();
+        }
+
+        String template = loadPromptTemplate(notificationPromptTemplateResource);
+        String prompt = template
+            .replace("{{NOW_ISO}}", OffsetDateTime.now(ZoneId.of("Europe/Madrid")).toString())
+            .replace("{{NOTE_CONTENT}}", trimmedContent);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("model", model);
+        payload.put("prompt", prompt);
+        payload.put("stream", false);
+
+        try {
+            JsonNode responseNode = restClient.post()
+                .uri("/api/generate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(payload)
+                .retrieve()
+                .body(JsonNode.class);
+
+            if (responseNode == null || !responseNode.hasNonNull("response")) {
+                return Optional.empty();
+            }
+
+            String raw = responseNode.path("response").asText("").trim();
+            if (!StringUtils.hasText(raw)) {
+                return Optional.empty();
+            }
+            String cleaned = raw
+                .replace("\"", "")
+                .lines()
+                .findFirst()
+                .orElse("")
+                .trim();
+
+            if (!StringUtils.hasText(cleaned) || "NONE".equalsIgnoreCase(cleaned)) {
+                return Optional.empty();
+            }
+
+            try {
+                return Optional.of(Instant.parse(cleaned));
+            } catch (DateTimeParseException ignored) {
+            }
+
+            try {
+                return Optional.of(OffsetDateTime.parse(cleaned).toInstant());
+            } catch (DateTimeParseException ignored) {
+            }
+
+            try {
+                LocalDateTime dateTime = LocalDateTime.parse(cleaned);
+                return Optional.of(dateTime.atZone(ZoneId.of("Europe/Madrid")).toInstant());
+            } catch (DateTimeParseException ignored) {
+            }
+        } catch (Exception ignored) {
+            return Optional.empty();
+        }
+
+        return Optional.empty();
+    }
+
+    private String loadPromptTemplate(Resource promptTemplateResource) {
         try {
             return new String(promptTemplateResource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException ex) {

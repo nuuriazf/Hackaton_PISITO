@@ -13,8 +13,8 @@ export function getEntry(id: number) {
   });
 }
 
-export function createNote(input: CreateNoteInput) {
-  return api<Entry>("/entries/notes", {
+export function createEntry(input: CreateNoteInput) {
+  return api<Entry>("/entries", {
     method: "POST",
     body: JSON.stringify(input)
   });

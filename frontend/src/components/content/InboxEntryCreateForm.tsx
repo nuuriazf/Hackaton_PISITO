@@ -183,13 +183,11 @@ export function InboxEntryCreateForm({
           <label className={fieldLabelClass}>
             <span>{t("inbox.titleLabel")}</span>
             <textarea
-              minLength={1}
-              maxLength={120}
+              maxLength={80}
               rows={1}
-              required
               disabled={submitting}
               placeholder={t("inbox.titlePlaceholder")}
-              className={`${inputClass} scrollbar-brand min-h-[44px] max-h-[44px] resize-none overflow-x-hidden overflow-y-scroll`}
+              className={`${inputClass} scrollbar-brand min-h-[44px] max-h-[44px] resize-none overflow-x-hidden overflow-y-hidden`}
               value={values.title}
               onChange={(event) => onChange({ title: event.target.value })}
             />
@@ -199,6 +197,7 @@ export function InboxEntryCreateForm({
             <span>{t("inbox.textLabel")}</span>
             <textarea
               disabled={submitting}
+              autoFocus
               placeholder={t("inbox.textPlaceholder")}
               className={`${textareaClass} scrollbar-brand min-h-[160px] max-h-[300px] resize-none overflow-y-scroll`}
               value={values.textContent}

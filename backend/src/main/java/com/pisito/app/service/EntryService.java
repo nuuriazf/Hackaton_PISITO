@@ -1,8 +1,7 @@
 package com.pisito.app.service;
 
-import com.pisito.app.controller.dto.CreateNoteRequest;
-import com.pisito.app.controller.dto.entry.CreateEntryRequest;
 import com.pisito.app.controller.dto.entry.CreateEntryResourceRequest;
+import com.pisito.app.controller.dto.entry.CreateNoteRequest;
 import com.pisito.app.controller.dto.entry.EntryResponse;
 import com.pisito.app.controller.dto.entry.UpdateEntryRequest;
 import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
@@ -11,6 +10,7 @@ import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.resource.ResourceResponse;
 import com.pisito.app.model.AppUser;
 import com.pisito.app.model.Entry;
+import com.pisito.app.model.FlagEnum;
 import com.pisito.app.model.LinkResource;
 import com.pisito.app.model.MediaResource;
 import com.pisito.app.model.Resource;
@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -62,38 +63,51 @@ public class EntryService {
     }
 
     @Transactional
-    public EntryResponse createEntry(Long userId, CreateEntryRequest request) {
-        Entry entry = new Entry();
-        entry.setTitle(trimRequired(request.getTitle(), "title is required"));
-        entry.setOwner(getUserOrThrow(userId));
-        for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
-            entry.addResource(buildResource(resourceRequest));
-        }
-        return toEntryResponse(entryRepository.save(entry));
-    }
-
-    @Transactional
-    public EntryResponse createNote(CreateNoteRequest request) {
-        String noteContent = trimRequired(request.getContent(), "content is required");
+    public EntryResponse createEntry(Long userId, CreateNoteRequest request) {
         String title = trimOrNull(request.getTitle());
-        if (!StringUtils.hasText(title)) {
-            title = ollamaTitleService.generateTitle(noteContent);
-        }
 
         Entry entry = new Entry();
+        entry.setOwner(getUserOrThrow(userId));
+
+        TextResource firstTextResource = null;
+        if (request.getResources() != null) {
+            for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
+                Resource resource = buildResource(resourceRequest);
+                entry.addResource(resource);
+
+                if (firstTextResource == null
+                    && resource instanceof TextResource tr
+                    && StringUtils.hasText(tr.getTextContent())) {
+                    firstTextResource = tr;
+                }
+            }
+        }
+
+        String firstText = firstTextResource != null ? firstTextResource.getTextContent().trim() : "";
+        String flagValue = request.getFlag() != null ? request.getFlag().name() : "";
+        String baseContext =
+            (StringUtils.hasText(flagValue) ? ("FLAG=" + flagValue + "\n") : "") +
+            (StringUtils.hasText(firstText) ? firstText : "");
+
+        if (!StringUtils.hasText(title)) {
+            title = ollamaTitleService.generateTitle(baseContext);
+        }
         entry.setTitle(trimRequired(title, "title is required"));
-        entry.setOwner(getUserOrThrow(request.getUserId()));
 
-        TextResource textResource = new TextResource();
-        textResource.setTextContent(noteContent);
-        entry.addResource(textResource);
+        if (request.getNotification()) {
+            entry.setNotificationDate(ollamaTitleService.extractNotificationDate(baseContext).orElse(null));
+        } else {
+            entry.setNotificationDate(null);
+        }
 
-        spotifySongLinkService.findSongLinkForNote(noteContent).ifPresent(link -> {
-            LinkResource songLink = new LinkResource();
-            songLink.setTitle("Cancion sugerida");
-            songLink.setUrl(link);
-            entry.addResource(songLink);
-        });
+        if (request.getFlag() == FlagEnum.SPOTIFY && StringUtils.hasText(firstText)) {
+            spotifySongLinkService.findSongLinkForNote(firstText).ifPresent(link -> {
+                LinkResource songLink = new LinkResource();
+                songLink.setTitle("Cancion sugerida");
+                songLink.setUrl(link);
+                entry.addResource(songLink);
+            });
+        }
 
         return toEntryResponse(entryRepository.save(entry));
     }
