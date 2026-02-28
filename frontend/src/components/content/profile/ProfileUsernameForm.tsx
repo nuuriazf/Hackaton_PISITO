@@ -1,4 +1,5 @@
 import { FormEventHandler } from "react";
+import { useI18n } from "../../../i18n/I18nProvider";
 import { Button } from "../../ui/Button";
 import { inputClass } from "../../ui/styles";
 
@@ -19,9 +20,10 @@ export function ProfileUsernameForm({
   onCurrentPasswordChange,
   onSubmit
 }: ProfileUsernameFormProps) {
+  const { t } = useI18n();
+
   return (
     <form className="grid gap-2.5" onSubmit={onSubmit}>
-      <h3 className="text-sm font-bold text-ink-800">Cambiar nombre de usuario</h3>
       <input
         type="text"
         minLength={3}
@@ -29,7 +31,7 @@ export function ProfileUsernameForm({
         value={usernameValue}
         disabled={submitting}
         className={inputClass}
-        placeholder="Nuevo nombre de usuario"
+        placeholder={t("profile.usernamePlaceholder")}
         onChange={(event) => onUsernameChange(event.target.value)}
       />
       <input
@@ -39,11 +41,11 @@ export function ProfileUsernameForm({
         value={currentPasswordValue}
         disabled={submitting}
         className={inputClass}
-        placeholder="Contraseña actual"
+        placeholder={t("profile.currentPasswordPlaceholder")}
         onChange={(event) => onCurrentPasswordChange(event.target.value)}
       />
       <Button type="submit" variant="primary" disabled={submitting}>
-        {submitting ? "Guardando..." : "Guardar usuario"}
+        {submitting ? t("common.saving") : t("profile.saveUsername")}
       </Button>
     </form>
   );

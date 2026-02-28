@@ -3,12 +3,14 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { AuthEntryGate } from "./components/auth/AuthEntryGate";
 import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
-import { ContentDashboard } from "./components/content/ContentDashboard";
+import { ContentInbox } from "./components/content/ContentInbox";
 import { appCenterClass, appShellClass, panelClass } from "./components/ui/styles";
 import { useAuthSession } from "./hooks/useAuthSession";
+import { useI18n } from "./i18n/I18nProvider";
 import type { AuthCredentials } from "./types/auth";
 
 function App() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const auth = useAuthSession();
 
@@ -25,7 +27,7 @@ function App() {
     async (credentials: AuthCredentials) => {
       const success = await auth.loginUser(credentials);
       if (success) {
-        navigate("/dashboard", { replace: true });
+        navigate("/inbox", { replace: true });
       }
     },
     [auth.loginUser, navigate]
@@ -35,7 +37,7 @@ function App() {
     async (credentials: AuthCredentials) => {
       const success = await auth.registerUser(credentials);
       if (success) {
-        navigate("/dashboard", { replace: true });
+        navigate("/inbox", { replace: true });
       }
     },
     [auth.registerUser, navigate]
@@ -47,7 +49,7 @@ function App() {
         <section className={appShellClass}>
           <section className={appCenterClass}>
             <section className={`${panelClass} max-w-[420px] text-center`}>
-              <p className="text-ink-700">Comprobando sesion...</p>
+              <p className="text-ink-700">{t("app.checkingSession")}</p>
             </section>
           </section>
         </section>
@@ -61,7 +63,7 @@ function App() {
         <Route
           path="/"
           element={
-            auth.authUser ? <Navigate to="/dashboard" replace /> : withAuthCardLayout(<AuthEntryGate />)
+            auth.authUser ? <Navigate to="/inbox" replace /> : withAuthCardLayout(<AuthEntryGate />)
           }
         />
 
@@ -69,7 +71,7 @@ function App() {
           path="/login"
           element={
             auth.authUser ? (
-              <Navigate to="/dashboard" replace />
+              <Navigate to="/inbox" replace />
             ) : (
               withAuthCardLayout(
                 <LoginForm
@@ -86,7 +88,7 @@ function App() {
           path="/register"
           element={
             auth.authUser ? (
-              <Navigate to="/dashboard" replace />
+              <Navigate to="/inbox" replace />
             ) : (
               withAuthCardLayout(
                 <RegisterForm
@@ -99,14 +101,68 @@ function App() {
           }
         />
 
-        <Route path="/registrarse" element={<Navigate to="/register" replace />} />
-        <Route path="/registrase" element={<Navigate to="/register" replace />} />
-
         <Route
-          path="/dashboard"
+          path="/inbox"
           element={
             auth.authUser ? (
-              <ContentDashboard
+              <ContentInbox
+                username={auth.authUser.username}
+                submitting={auth.authSubmitting}
+                error={auth.authError}
+                onUpdateUsername={auth.updateUsernameUser}
+                onUpdatePassword={auth.updatePasswordUser}
+                onClearError={auth.clearAuthError}
+                onLogout={auth.logout}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/explore"
+          element={
+            auth.authUser ? (
+              <ContentInbox
+                username={auth.authUser.username}
+                submitting={auth.authSubmitting}
+                error={auth.authError}
+                onUpdateUsername={auth.updateUsernameUser}
+                onUpdatePassword={auth.updatePasswordUser}
+                onClearError={auth.clearAuthError}
+                onLogout={auth.logout}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/storage"
+          element={
+            auth.authUser ? (
+              <ContentInbox
+                username={auth.authUser.username}
+                submitting={auth.authSubmitting}
+                error={auth.authError}
+                onUpdateUsername={auth.updateUsernameUser}
+                onUpdatePassword={auth.updatePasswordUser}
+                onClearError={auth.clearAuthError}
+                onLogout={auth.logout}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/relationship-graph"
+          element={
+            auth.authUser ? (
+              <ContentInbox
                 username={auth.authUser.username}
                 submitting={auth.authSubmitting}
                 error={auth.authError}
@@ -125,7 +181,7 @@ function App() {
           path="/profile"
           element={
             auth.authUser ? (
-              <ContentDashboard
+              <ContentInbox
                 username={auth.authUser.username}
                 submitting={auth.authSubmitting}
                 error={auth.authError}

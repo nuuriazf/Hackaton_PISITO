@@ -1,4 +1,5 @@
 import { FormEvent } from "react";
+import { useI18n } from "../../i18n/I18nProvider";
 import { formStackClass, inputClass, primaryButtonClass } from "../ui/styles";
 
 type EntryCreateFormProps = {
@@ -9,17 +10,19 @@ type EntryCreateFormProps = {
 };
 
 export function EntryCreateForm({ value, submitting, onChange, onSubmit }: EntryCreateFormProps) {
+  const { t } = useI18n();
+
   return (
     <form className={formStackClass} onSubmit={onSubmit}>
       <input
         type="text"
-        placeholder="Nueva Entry (ej: Ideas de producto)"
+        placeholder={t("entryCreate.placeholder")}
         className={inputClass}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
       <button type="submit" className={primaryButtonClass} disabled={submitting}>
-        Crear Entry
+        {t("entryCreate.submit")}
       </button>
     </form>
   );

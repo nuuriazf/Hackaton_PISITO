@@ -1,4 +1,5 @@
 import { FormEvent } from "react";
+import { useI18n } from "../../i18n/I18nProvider";
 import type { EntryItem, ResourceType } from "../../types/resource";
 import type { ResourceFormValues } from "../../features/content/resourceForm";
 import { formStackClass, inputClass, primaryButtonClass, textareaClass } from "../ui/styles";
@@ -18,6 +19,8 @@ export function ResourceCreateForm({
   onSubmit,
   onChange
 }: ResourceCreateFormProps) {
+  const { t } = useI18n();
+
   return (
     <form className={formStackClass} onSubmit={onSubmit}>
       <select
@@ -28,7 +31,7 @@ export function ResourceCreateForm({
           onChange({ selectedEntryId: selected === "" ? "" : Number(selected) });
         }}
       >
-        <option value="">Selecciona Entry</option>
+        <option value="">{t("resourceCreate.selectEntry")}</option>
         {entries.map((entry) => (
           <option key={entry.id} value={entry.id}>
             {entry.title}
@@ -41,14 +44,14 @@ export function ResourceCreateForm({
         value={values.type}
         onChange={(event) => onChange({ type: event.target.value as ResourceType })}
       >
-        <option value="TEXT">TEXT</option>
-        <option value="LINK">LINK</option>
-        <option value="MEDIA">MEDIA</option>
+        <option value="TEXT">{t("resourceType.text")}</option>
+        <option value="LINK">{t("resourceType.link")}</option>
+        <option value="MEDIA">{t("resourceType.media")}</option>
       </select>
 
       <input
         type="text"
-        placeholder="Titulo del recurso (opcional)"
+        placeholder={t("resourceCreate.titlePlaceholder")}
         className={inputClass}
         value={values.title}
         onChange={(event) => onChange({ title: event.target.value })}
@@ -56,7 +59,7 @@ export function ResourceCreateForm({
 
       {values.type === "TEXT" && (
         <textarea
-          placeholder="textContent"
+          placeholder={t("resourceCreate.textPlaceholder")}
           className={textareaClass}
           value={values.textContent}
           onChange={(event) => onChange({ textContent: event.target.value })}
@@ -66,7 +69,7 @@ export function ResourceCreateForm({
       {values.type === "LINK" && (
         <input
           type="url"
-          placeholder="https://..."
+          placeholder={t("resourceCreate.linkPlaceholder")}
           className={inputClass}
           value={values.url}
           onChange={(event) => onChange({ url: event.target.value })}
@@ -77,21 +80,21 @@ export function ResourceCreateForm({
         <>
           <input
             type="text"
-            placeholder="storageKey (ej: media/foto.png o media/video.mp4)"
+            placeholder={t("resourceCreate.storageKeyPlaceholder")}
             className={inputClass}
             value={values.storageKey}
             onChange={(event) => onChange({ storageKey: event.target.value })}
           />
           <input
             type="text"
-            placeholder="fileName (opcional)"
+            placeholder={t("resourceCreate.fileNamePlaceholder")}
             className={inputClass}
             value={values.fileName}
             onChange={(event) => onChange({ fileName: event.target.value })}
           />
           <input
             type="text"
-            placeholder="mimeType (opcional)"
+            placeholder={t("resourceCreate.mimeTypePlaceholder")}
             className={inputClass}
             value={values.mimeType}
             onChange={(event) => onChange({ mimeType: event.target.value })}
@@ -104,7 +107,7 @@ export function ResourceCreateForm({
         className={primaryButtonClass}
         disabled={submitting || values.selectedEntryId === ""}
       >
-        {submitting ? "Guardando..." : "Guardar recurso"}
+        {submitting ? t("common.saving") : t("resourceCreate.submit")}
       </button>
     </form>
   );

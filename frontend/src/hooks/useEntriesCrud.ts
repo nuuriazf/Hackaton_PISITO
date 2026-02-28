@@ -10,6 +10,7 @@ import {
   fetchEntries
 } from "../api/resources";
 import { INITIAL_RESOURCE_FORM, type ResourceFormValues } from "../features/content/resourceForm";
+import { useI18n } from "../i18n/I18nProvider";
 import type { EntryItem } from "../types/resource";
 import { readErrorMessage } from "../utils/error";
 
@@ -40,6 +41,7 @@ function setSelectedEntryAfterLoad(
 }
 
 export function useEntriesCrud({ enabled, onUnauthorized }: UseEntriesCrudOptions) {
+  const { t } = useI18n();
   const [entries, setEntries] = useState<EntryItem[]>([]);
   const [newEntryTitle, setNewEntryTitle] = useState("");
   const [resourceForm, setResourceForm] = useState<ResourceFormValues>(INITIAL_RESOURCE_FORM);
@@ -78,9 +80,9 @@ export function useEntriesCrud({ enabled, onUnauthorized }: UseEntriesCrudOption
         onUnauthorized();
         return;
       }
-      setError(readErrorMessage(requestError));
+      setError(readErrorMessage(requestError, t("common.unexpectedError")));
     },
-    [onUnauthorized]
+    [onUnauthorized, t]
   );
 
   const loadEntries = useCallback(async () => {
@@ -150,7 +152,7 @@ export function useEntriesCrud({ enabled, onUnauthorized }: UseEntriesCrudOption
       } = resourceForm;
 
       if (selectedEntryId === "") {
-        setError("Primero crea una Entry.");
+        setError(t("entries.firstCreateEntry"));
         return;
       }
 
@@ -160,17 +162,17 @@ export function useEntriesCrud({ enabled, onUnauthorized }: UseEntriesCrudOption
 
         if (type === "TEXT") {
           if (!textContent.trim()) {
-            throw new Error("Para TEXT debes indicar textContent.");
+            throw new Error(t("entries.textRequired"));
           }
           await createTextResource(selectedEntryId, { title, textContent });
         } else if (type === "LINK") {
           if (!url.trim()) {
-            throw new Error("Para LINK debes indicar URL.");
+            throw new Error(t("entries.linkRequired"));
           }
           await createLinkResource(selectedEntryId, { title, url });
         } else {
           if (!storageKey.trim()) {
-            throw new Error("Para MEDIA debes indicar storageKey.");
+            throw new Error(t("entries.mediaRequired"));
           }
           await createMediaResource(selectedEntryId, {
             title,
@@ -188,7 +190,7 @@ export function useEntriesCrud({ enabled, onUnauthorized }: UseEntriesCrudOption
         setSending(false);
       }
     },
-    [handleRequestError, loadEntries, resetResourceFields, resourceForm]
+    [handleRequestError, loadEntries, resetResourceFields, resourceForm, t]
   );
 
   const onDeleteResource = useCallback(

@@ -1,9 +1,10 @@
 import { FormEvent, useMemo, useState } from "react";
-import { ArrowLongLeftIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { validatePassword, validateUsername } from "../../features/auth/formValidation";
+import { useI18n } from "../../i18n/I18nProvider";
 import type { AuthCredentials } from "../../types/auth";
 import { Button, buttonClass } from "../ui/Button";
+import { ArrowLongLeftIcon } from "../ui/icons";
 import { errorTextClass, fieldLabelClass, inputClass, pageTitleClass } from "../ui/styles";
 
 type LoginFormProps = {
@@ -13,6 +14,7 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ submitting, error, onSubmit }: LoginFormProps) {
+  const { t } = useI18n();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -48,7 +50,7 @@ export function LoginForm({ submitting, error, onSubmit }: LoginFormProps) {
         <div className="flex justify-start">
           <Link
             to="/"
-            aria-label="Volver"
+            aria-label={t("common.back")}
             className={buttonClass({
               variant: "ghost",
               fullWidth: false,
@@ -60,52 +62,54 @@ export function LoginForm({ submitting, error, onSubmit }: LoginFormProps) {
         </div>
 
         <header className="mt-5 text-center sm:mt-6">
-          <h1 className={`${pageTitleClass} text-[2rem] font-extrabold leading-[1.07] tracking-[-0.03em] sm:text-[2.4rem]`}>
-            Iniciar sesión
+          <h1
+            className={`${pageTitleClass} text-[2rem] font-extrabold leading-[1.07] tracking-[-0.03em] sm:text-[2.4rem]`}
+          >
+            {t("login.title")}
           </h1>
-          <p className="text-base leading-relaxed text-ink-600 sm:text-[1.05rem]">Accede en segundos</p>
+          <p className="text-base leading-relaxed text-ink-600 sm:text-[1.05rem]">{t("login.subtitle")}</p>
         </header>
 
         <div className="mt-5 grid gap-4 sm:mt-6">
           <label className={`${fieldLabelClass} ${usernameError ? "text-rose-700" : ""}`}>
-            <span>Nombre de usuario *</span>
+            <span>{t("auth.usernameLabel")}</span>
             <input
               type="text"
               minLength={3}
               maxLength={40}
               autoComplete="username"
-              placeholder="Introduce nombre"
+              placeholder={t("auth.usernamePlaceholder")}
               className={`${inputClass} ${usernameError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
               aria-invalid={Boolean(usernameError)}
               value={username}
               disabled={submitting}
               onChange={(event) => setUsername(event.target.value)}
             />
-            {usernameErrorText && <p className="text-sm font-medium text-rose-700">{usernameErrorText}</p>}
+            {usernameErrorText && <p className="text-sm font-medium text-rose-700">{t(usernameErrorText)}</p>}
           </label>
 
           <label className={`${fieldLabelClass} ${passwordError ? "text-rose-700" : ""}`}>
-            <span>Contraseña *</span>
+            <span>{t("auth.passwordLabel")}</span>
             <input
               type="password"
               minLength={8}
               maxLength={72}
               autoComplete="current-password"
-              placeholder="********"
+              placeholder={t("auth.passwordPlaceholder")}
               className={`${inputClass} ${passwordError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
               aria-invalid={Boolean(passwordError)}
               value={password}
               disabled={submitting}
               onChange={(event) => setPassword(event.target.value)}
             />
-            {passwordErrorText && <p className="text-sm font-medium text-rose-700">{passwordErrorText}</p>}
+            {passwordErrorText && <p className="text-sm font-medium text-rose-700">{t(passwordErrorText)}</p>}
           </label>
 
-          {error && <p className={errorTextClass}>Error: {error}</p>}
+          {error && <p className={errorTextClass}>{t("common.errorPrefix", { message: error })}</p>}
         </div>
 
         <Button type="submit" variant="secondary" size="lg" className="mt-auto" disabled={submitting}>
-          {submitting ? "Entrando..." : "Aceptar"}
+          {submitting ? t("login.submitting") : t("common.accept")}
         </Button>
       </form>
     </section>

@@ -1,4 +1,5 @@
 import { FormEventHandler } from "react";
+import { useI18n } from "../../../i18n/I18nProvider";
 import { Button } from "../../ui/Button";
 import { inputClass } from "../../ui/styles";
 
@@ -19,9 +20,10 @@ export function ProfilePasswordForm({
   onNewPasswordChange,
   onSubmit
 }: ProfilePasswordFormProps) {
+  const { t } = useI18n();
+
   return (
     <form className="grid gap-2.5" onSubmit={onSubmit}>
-      <h3 className="text-sm font-bold text-ink-800">Cambiar contrasena</h3>
       <input
         type="password"
         minLength={8}
@@ -29,7 +31,7 @@ export function ProfilePasswordForm({
         value={currentPasswordValue}
         disabled={submitting}
         className={inputClass}
-        placeholder="Contraseña actual"
+        placeholder={t("profile.currentPasswordPlaceholder")}
         onChange={(event) => onCurrentPasswordChange(event.target.value)}
       />
       <input
@@ -39,11 +41,11 @@ export function ProfilePasswordForm({
         value={newPasswordValue}
         disabled={submitting}
         className={inputClass}
-        placeholder="Nueva contraseña"
+        placeholder={t("profile.newPasswordPlaceholder")}
         onChange={(event) => onNewPasswordChange(event.target.value)}
       />
       <Button type="submit" variant="primary" disabled={submitting}>
-        {submitting ? "Guardando..." : "Guardar contraseña"}
+        {submitting ? t("common.saving") : t("profile.savePassword")}
       </Button>
     </form>
   );

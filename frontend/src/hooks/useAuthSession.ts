@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getMe, login, register, updatePassword, updateUsername } from "../api/auth";
 import { clearAccessToken, getAccessToken, setAccessToken } from "../api/client";
+import { useI18n } from "../i18n/I18nProvider";
 import type {
   AuthCredentials,
   AuthTokenResponse,
@@ -10,9 +11,8 @@ import type {
 } from "../types/auth";
 import { readErrorMessage } from "../utils/error";
 
-const SESSION_EXPIRED_MESSAGE = "Tu sesion ya no es valida. Vuelve a iniciar sesion.";
-
 export function useAuthSession() {
+  const { t } = useI18n();
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [authSubmitting, setAuthSubmitting] = useState(false);
@@ -53,22 +53,25 @@ export function useAuthSession() {
     };
   }, []);
 
-  const executeAuth = useCallback(async (request: () => Promise<AuthTokenResponse>) => {
-    try {
-      setAuthSubmitting(true);
-      setAuthError(null);
+  const executeAuth = useCallback(
+    async (request: () => Promise<AuthTokenResponse>) => {
+      try {
+        setAuthSubmitting(true);
+        setAuthError(null);
 
-      const response = await request();
-      setAccessToken(response.accessToken);
-      setAuthUser(response.user);
-      return true;
-    } catch (error) {
-      setAuthError(readErrorMessage(error));
-      return false;
-    } finally {
-      setAuthSubmitting(false);
-    }
-  }, []);
+        const response = await request();
+        setAccessToken(response.accessToken);
+        setAuthUser(response.user);
+        return true;
+      } catch (error) {
+        setAuthError(readErrorMessage(error, t("common.unexpectedError")));
+        return false;
+      } finally {
+        setAuthSubmitting(false);
+      }
+    },
+    [t]
+  );
 
   const loginUser = useCallback(
     async (credentials: AuthCredentials) => executeAuth(() => login(credentials)),
@@ -103,8 +106,8 @@ export function useAuthSession() {
   const expireSession = useCallback(() => {
     clearAccessToken();
     setAuthUser(null);
-    setAuthError(SESSION_EXPIRED_MESSAGE);
-  }, []);
+    setAuthError(t("auth.sessionExpired"));
+  }, [t]);
 
   return {
     authUser,
