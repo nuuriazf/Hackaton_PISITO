@@ -6,7 +6,7 @@ import com.pisito.app.controller.dto.auth.LoginRequest;
 import com.pisito.app.controller.dto.auth.RegisterRequest;
 import com.pisito.app.controller.dto.auth.UpdatePasswordRequest;
 import com.pisito.app.controller.dto.auth.UpdateUsernameRequest;
-import com.pisito.app.model.AppUser;
+import com.pisito.app.model.User;
 import com.pisito.app.repository.UserRepository;
 import com.pisito.app.security.JwtService;
 import org.springframework.http.HttpStatus;
@@ -43,27 +43,26 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
         }
 
-        AppUser user = new AppUser();
+        User user = new User();
         user.setUsername(username);
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setPassword(passwordEncoder.encode(rawPassword));
 
-        AppUser savedUser = userRepository.save(user);
+        User savedUser = userRepository.save(user);
         return toTokenResponse(savedUser);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AuthTokenResponse login(LoginRequest request) {
         String username = normalizeUsername(request.getUsername());
         String rawPassword = validatePassword(request.getPassword(), "password is required");
 
-        AppUser user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ese usuario no existe"));
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Contrasena incorrecta");
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid password");
         }
 
-        user.markLogin();
         return toTokenResponse(user);
     }
 
@@ -74,7 +73,7 @@ public class AuthService {
 
     @Transactional
     public AuthTokenResponse updateUsername(Long userId, UpdateUsernameRequest request) {
-        AppUser user = getUserOrThrow(userId);
+        User user = getUserOrThrow(userId);
         validateCurrentPassword(user, request.getCurrentPassword());
 
         String username = normalizeUsername(request.getUsername());
@@ -82,35 +81,37 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
         }
 
-        user.updateUsername(username);
+        user.setUsername(username);
+        userRepository.save(user);
         return toTokenResponse(user);
     }
 
     @Transactional
     public AuthTokenResponse updatePassword(Long userId, UpdatePasswordRequest request) {
-        AppUser user = getUserOrThrow(userId);
+        User user = getUserOrThrow(userId);
         validateCurrentPassword(user, request.getCurrentPassword());
 
         String newRawPassword = validatePassword(request.getNewPassword(), "newPassword is required");
-        if (passwordEncoder.matches(newRawPassword, user.getPasswordHash())) {
+        if (passwordEncoder.matches(newRawPassword, user.getPassword())) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "newPassword must be different from current password"
             );
         }
 
-        user.updatePasswordHash(passwordEncoder.encode(newRawPassword));
+        user.setPassword(passwordEncoder.encode(newRawPassword));
+        userRepository.save(user);
         return toTokenResponse(user);
     }
 
-    private AppUser getUserOrThrow(Long userId) {
+    private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
-    private void validateCurrentPassword(AppUser user, String rawPassword) {
+    private void validateCurrentPassword(User user, String rawPassword) {
         String validatedPassword = validatePassword(rawPassword, "currentPassword is required");
-        if (!passwordEncoder.matches(validatedPassword, user.getPasswordHash())) {
+        if (!passwordEncoder.matches(validatedPassword, user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
     }
@@ -142,18 +143,14 @@ public class AuthService {
         return password;
     }
 
-    private AuthUserResponse toResponse(AppUser user) {
+    private AuthUserResponse toResponse(User user) {
         return new AuthUserResponse(
             user.getId(),
-            user.getUsername(),
-            user.getCreatedAt(),
-            user.getUpdatedAt(),
-            user.getLastLoginAt(),
-            user.getPasswordUpdatedAt()
+            user.getUsername()
         );
     }
 
-    private AuthTokenResponse toTokenResponse(AppUser user) {
+    private AuthTokenResponse toTokenResponse(User user) {
         return new AuthTokenResponse(
             "Bearer",
             jwtService.generateToken(user),

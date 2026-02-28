@@ -51,11 +51,19 @@ public class Entry {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private AppUser user;
+    private User user;
 
     @OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt DESC")
     private List<Resource> resources = new ArrayList<>();
+
+    @ManyToMany(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "entry_tags",
+        joinColumns = @JoinColumn(name = "entry_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private List<Tag> tags = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
@@ -94,6 +102,16 @@ public class Entry {
         resources.remove(resource);
         resource.setEntry(null);
         touch();
+    }
+
+    public void addTag(Tag tag) {
+        tags.add(tag);
+        tag.getEntries().add(this);
+    }
+
+    public void removeTag(Tag tag) {
+        tags.remove(tag);
+        tag.getEntries().remove(this);
     }
 
     public void touch() {
@@ -144,14 +162,6 @@ public class Entry {
         this.updateDate = updateDate;
     }
 
-    public Instant getNotificationDate() {
-        return notificationDate;
-    }
-
-    public void setNotificationDate(Instant notificationDate) {
-        this.notificationDate = notificationDate;
-    }
-
     public FlagEnum getFlag() {
         return flag;
     }
@@ -160,11 +170,11 @@ public class Entry {
         this.flag = flag;
     }
 
-    public AppUser getUser() {
+    public User getUser() {
         return user;
     }
 
-    public void setUser(AppUser user) {
+    public void setUser(User user) {
         this.user = user;
     }
 
@@ -176,4 +186,27 @@ public class Entry {
         this.resources = resources;
     }
 
+    public Instant getNotificationDate() {
+        return notificationDate;
+    }
+
+    public void setNotificationDate(Instant notificationDate) {
+        this.notificationDate = notificationDate;
+    }
+
+    public List<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<Tag> tags) {
+        this.tags = tags;
+    }
+
+    public Set<Folder> getFolders() {
+        return folders;
+    }
+
+    public void setFolders(Set<Folder> folders) {
+        this.folders = folders;
+    }
 }
