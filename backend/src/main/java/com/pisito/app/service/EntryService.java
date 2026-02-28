@@ -8,6 +8,7 @@ import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateMediaResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.resource.ResourceResponse;
+import com.pisito.app.controller.dto.resource.UpdateTextResourceRequest;
 import com.pisito.app.model.AppUser;
 import com.pisito.app.model.Entry;
 import com.pisito.app.model.FlagEnum;
@@ -144,6 +145,31 @@ public class EntryService {
         resource.setFileName(trimOrNull(request.getFileName()));
         resource.setMimeType(trimOrNull(request.getMimeType()));
         return saveResource(userId, entryId, resource);
+    }
+
+    @Transactional
+    public ResourceResponse updateTextResource(
+        Long userId,
+        Long entryId,
+        Long resourceId,
+        UpdateTextResourceRequest request
+    ) {
+        Resource resource = getResourceOrThrow(resourceId);
+        Entry parent = resource.getEntry();
+
+        if (!parent.getId().equals(entryId) || !parent.getOwner().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
+        }
+
+        if (!(resource instanceof TextResource textResource)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resource is not TEXT");
+        }
+
+        textResource.setTitle(trimOrNull(request.getTitle()));
+        textResource.setTextContent(trimRequired(request.getTextContent(), "textContent is required"));
+        parent.touch();
+
+        return toResourceResponse(textResource);
     }
 
     @Transactional

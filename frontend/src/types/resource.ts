@@ -20,6 +20,17 @@ export type EntryItem = {
   updatedAt: string;
 };
 
+export type FolderItem = {
+  id: number;
+  title: string;
+};
+
+export type EntryFolderItem = {
+  id: number;
+  title: string;
+  selected: boolean;
+};
+
 export type CreateEntryResourceInput = {
   type: ResourceType;
   title?: string;
