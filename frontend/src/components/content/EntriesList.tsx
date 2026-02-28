@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n/I18nProvider";
 import type { EntryItem } from "../../types/resource";
 import { dangerButtonClass, ghostButtonClass } from "../ui/styles";
 
@@ -9,6 +10,8 @@ type EntriesListProps = {
 };
 
 export function EntriesList({ entries, busy, onDeleteEntry, onDeleteResource }: EntriesListProps) {
+  const { t } = useI18n();
+
   return (
     <ul className="m-0 grid list-none gap-2.5 p-0">
       {entries.map((entry) => (
@@ -18,7 +21,7 @@ export function EntriesList({ entries, busy, onDeleteEntry, onDeleteResource }: 
         >
           <div className="grid gap-2">
             <strong className="text-ink-900">{entry.title}</strong>
-            {entry.resources.length === 0 && <p className="m-0 text-sm text-ink-500">Sin recursos</p>}
+            {entry.resources.length === 0 && <p className="m-0 text-sm text-ink-500">{t("entries.noResources")}</p>}
             {entry.resources.map((resource) => (
               <div key={resource.id} className="flex flex-wrap items-center gap-2 text-sm text-ink-700">
                 <span className="inline-flex rounded-full border border-brand-200 bg-white px-2 py-0.5 text-xs font-medium text-brand-700">
@@ -26,7 +29,7 @@ export function EntriesList({ entries, busy, onDeleteEntry, onDeleteResource }: 
                 </span>
                 <span className="break-all">
                   {resource.title ? `${resource.title} - ` : ""}
-                  {resource.textContent || resource.url || resource.storageKey || "Sin contenido"}
+                  {resource.textContent || resource.url || resource.storageKey || t("entries.noContent")}
                 </span>
                 <button
                   type="button"
@@ -34,7 +37,7 @@ export function EntriesList({ entries, busy, onDeleteEntry, onDeleteResource }: 
                   disabled={busy}
                   onClick={() => onDeleteResource(entry.id, resource.id)}
                 >
-                  Borrar recurso
+                  {t("entries.deleteResource")}
                 </button>
               </div>
             ))}
@@ -46,7 +49,7 @@ export function EntriesList({ entries, busy, onDeleteEntry, onDeleteResource }: 
             disabled={busy}
             onClick={() => onDeleteEntry(entry.id)}
           >
-            Borrar entry
+            {t("entries.deleteEntry")}
           </button>
         </li>
       ))}

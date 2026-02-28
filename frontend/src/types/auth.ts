@@ -5,6 +5,16 @@ export type AuthCredentials = {
   password: string;
 };
 
+export type UpdateUsernameInput = {
+  username: string;
+  currentPassword: string;
+};
+
+export type UpdatePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 export type AuthUser = {
   id: number;
   username: string;

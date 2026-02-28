@@ -23,12 +23,12 @@ export const inputClass =
 export const textareaClass = `${inputClass} min-h-24 resize-y`;
 
 export const primaryButtonClass =
-  "w-full rounded-control bg-brand-500 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70";
+  "w-full rounded-control bg-brand-500 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 active:translate-y-px active:scale-[0.985] active:brightness-95 transform disabled:cursor-not-allowed disabled:opacity-70";
 
 export const ghostButtonClass =
-  "rounded-control border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-600 transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-70";
+  "rounded-control border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-600 transition hover:bg-brand-100 active:translate-y-px active:scale-[0.985] active:brightness-95 transform disabled:cursor-not-allowed disabled:opacity-70";
 
 export const dangerButtonClass =
-  "rounded-control bg-rose-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70";
+  "rounded-control bg-rose-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-rose-700 active:translate-y-px active:scale-[0.985] active:brightness-95 transform disabled:cursor-not-allowed disabled:opacity-70";
 
 export const errorTextClass = "my-2 text-sm font-semibold text-rose-700";

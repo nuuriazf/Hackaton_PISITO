@@ -1,6 +1,6 @@
-export function readErrorMessage(error: unknown): string {
+export function readErrorMessage(error: unknown, fallbackMessage = "Unexpected error"): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "Se produjo un error inesperado.";
+  return fallbackMessage;
 }
