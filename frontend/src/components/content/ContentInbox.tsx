@@ -1,12 +1,12 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { isApiError } from "../../api/client";
-import { createEntry } from "../../api/resources";
+import { createEntry, fetchEntries } from "../../api/resources";
 import { validatePassword, validateUsername } from "../../features/auth/formValidation";
 import { useI18n } from "../../i18n/I18nProvider";
 import type { AppLanguage, I18nKey } from "../../i18n/messages";
 import type { UpdatePasswordInput, UpdateUsernameInput } from "../../types/auth";
-import type { CreateEntryResourceInput } from "../../types/resource";
+import type { CreateEntryResourceInput, EntryItem } from "../../types/resource";
 import { readErrorMessage } from "../../utils/error";
 import {
   Cog6ToothIcon,
@@ -28,6 +28,7 @@ import {
 import { ProfileLogoutButton } from "./profile/ProfileLogoutButton";
 import { ProfilePasswordForm } from "./profile/ProfilePasswordForm";
 import { ProfileUsernameForm } from "./profile/ProfileUsernameForm";
+import { StorageEntriesSection } from "./storage/StorageEntriesSection";
 
 type ContentInboxProps = {
   username: string;
@@ -129,6 +130,10 @@ export function ContentInbox({
   const [inboxSubmitting, setInboxSubmitting] = useState(false);
   const [inboxError, setInboxError] = useState<string | null>(null);
   const [inboxMessage, setInboxMessage] = useState<string | null>(null);
+  const [storageEntries, setStorageEntries] = useState<EntryItem[]>([]);
+  const [storageLoading, setStorageLoading] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [storageSearchValue, setStorageSearchValue] = useState("");
 
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameCurrentPassword, setUsernameCurrentPassword] = useState("");
@@ -152,6 +157,31 @@ export function ContentInbox({
   useEffect(() => {
     setActiveSection(sectionFromPath(location.pathname));
   }, [location.pathname]);
+
+  const loadStorageEntries = useCallback(async () => {
+    try {
+      setStorageLoading(true);
+      setStorageError(null);
+
+      const data = await fetchEntries();
+      setStorageEntries(data);
+    } catch (requestError) {
+      if (isApiError(requestError) && requestError.status === 401) {
+        onLogout();
+        return;
+      }
+      setStorageError(readErrorMessage(requestError, t("common.unexpectedError")));
+    } finally {
+      setStorageLoading(false);
+    }
+  }, [onLogout, t]);
+
+  useEffect(() => {
+    if (activeSection !== "storage") {
+      return;
+    }
+    void loadStorageEntries();
+  }, [activeSection, loadStorageEntries]);
 
   useEffect(() => {
     if (!settingsOpen && !notificationsOpen) {
@@ -604,6 +634,14 @@ export function ContentInbox({
               heading="Inbox"
               onSubmit={handleCreateInboxEntry}
               onChange={patchInboxEntryForm}
+            />
+          ) : activeSection === "storage" ? (
+            <StorageEntriesSection
+              entries={storageEntries}
+              loading={storageLoading}
+              error={storageError}
+              searchValue={storageSearchValue}
+              onSearchChange={setStorageSearchValue}
             />
           ) : (
             <section className="rounded-card border border-brand-200 bg-white/95 p-8 text-center shadow-card md:p-10">
