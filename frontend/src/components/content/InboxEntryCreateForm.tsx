@@ -2,37 +2,34 @@ import { DragEvent, FormEvent, ReactNode, useState } from "react";
 import { useI18n } from "../../i18n/I18nProvider";
 import { Button } from "../ui/Button";
 import {
-  BellAlertIcon,
-  BookIcon,
+  AlarmClockIcon,
+  ChecklistIcon,
   FileDropIcon,
-  FoodIcon,
   LinkIcon,
+  ListBulletIcon,
   MusicalNoteIcon,
-  PhotoIcon,
-  SportIcon,
-  TiktokIcon,
-  TravelIcon,
+  SurveyIcon,
+  TableIcon,
   TwitchIcon,
-  WeatherIcon,
   YoutubeIcon
 } from "../ui/icons";
 import { errorTextClass, fieldLabelClass, inputClass, textareaClass } from "../ui/styles";
+
+type PrimaryInboxOption =
+  | "youtube"
+  | "spotify"
+  | "twitch"
+  | "link"
+  | "table"
+  | "enumeration"
+  | "checklist"
+  | "survey";
 
 export type InboxEntryFormValues = {
   title: string;
   textContent: string;
   mediaFile: File | null;
-  musicEnabled: boolean;
-  linkEnabled: boolean;
-  photoEnabled: boolean;
-  youtubeEnabled: boolean;
-  tiktokEnabled: boolean;
-  twitchEnabled: boolean;
-  foodEnabled: boolean;
-  sportEnabled: boolean;
-  travelEnabled: boolean;
-  weatherEnabled: boolean;
-  bookEnabled: boolean;
+  selectedPrimaryOption: PrimaryInboxOption | null;
   alarmEnabled: boolean;
 };
 
@@ -43,49 +40,6 @@ type InboxEntryCreateFormProps = {
   heading?: string;
   onSubmit: () => void | Promise<void>;
   onChange: (patch: Partial<InboxEntryFormValues>) => void;
-};
-
-type ToggleMenuItem =
-  | "music"
-  | "link"
-  | "photo"
-  | "youtube"
-  | "tiktok"
-  | "twitch"
-  | "food"
-  | "sport"
-  | "travel"
-  | "weather"
-  | "book"
-  | "alarm";
-
-type ToggleField =
-  | "musicEnabled"
-  | "linkEnabled"
-  | "photoEnabled"
-  | "youtubeEnabled"
-  | "tiktokEnabled"
-  | "twitchEnabled"
-  | "foodEnabled"
-  | "sportEnabled"
-  | "travelEnabled"
-  | "weatherEnabled"
-  | "bookEnabled"
-  | "alarmEnabled";
-
-const TOGGLE_FIELD_BY_ITEM: Record<ToggleMenuItem, ToggleField> = {
-  music: "musicEnabled",
-  link: "linkEnabled",
-  photo: "photoEnabled",
-  youtube: "youtubeEnabled",
-  tiktok: "tiktokEnabled",
-  twitch: "twitchEnabled",
-  food: "foodEnabled",
-  sport: "sportEnabled",
-  travel: "travelEnabled",
-  weather: "weatherEnabled",
-  book: "bookEnabled",
-  alarm: "alarmEnabled"
 };
 
 function toggleButtonClass(active: boolean) {
@@ -166,9 +120,14 @@ export function InboxEntryCreateForm({
     updateMediaFile(event.dataTransfer.files?.[0] ?? null);
   }
 
-  function toggleMenuItem(item: ToggleMenuItem) {
-    const field = TOGGLE_FIELD_BY_ITEM[item];
-    onChange({ [field]: !values[field] } as Partial<InboxEntryFormValues>);
+  function togglePrimaryOption(option: PrimaryInboxOption) {
+    onChange({
+      selectedPrimaryOption: values.selectedPrimaryOption === option ? null : option
+    });
+  }
+
+  function toggleAlarm() {
+    onChange({ alarmEnabled: !values.alarmEnabled });
   }
 
   return (
@@ -237,102 +196,76 @@ export function InboxEntryCreateForm({
       </section>
 
       <section className="rounded-card border border-brand-200 bg-white/95 p-3 shadow-card">
-        <div className="grid grid-cols-4 gap-2 sm:flex sm:items-center">
-          <IconToggleButton
-            label={t("icon.photo")}
-            active={values.photoEnabled}
-            disabled={submitting}
-            onClick={() => toggleMenuItem("photo")}
-          >
-            <PhotoIcon className="h-6 w-6" />
-          </IconToggleButton>
+        <div className="grid grid-cols-4 gap-2 sm:flex sm:items-center sm:gap-2">
           <IconToggleButton
             label={t("icon.youtube")}
-            active={values.youtubeEnabled}
+            active={values.selectedPrimaryOption === "youtube"}
             disabled={submitting}
-            onClick={() => toggleMenuItem("youtube")}
+            onClick={() => togglePrimaryOption("youtube")}
           >
             <YoutubeIcon className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
-            label={t("icon.link")}
-            active={values.linkEnabled}
+            label={t("icon.spotify")}
+            active={values.selectedPrimaryOption === "spotify"}
             disabled={submitting}
-            onClick={() => toggleMenuItem("link")}
-          >
-            <LinkIcon className="h-6 w-6" />
-          </IconToggleButton>
-          <IconToggleButton
-            label={t("icon.music")}
-            active={values.musicEnabled}
-            disabled={submitting}
-            onClick={() => toggleMenuItem("music")}
+            onClick={() => togglePrimaryOption("spotify")}
           >
             <MusicalNoteIcon className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
-            label={t("icon.tiktok")}
-            active={values.tiktokEnabled}
-            disabled={submitting}
-            onClick={() => toggleMenuItem("tiktok")}
-          >
-            <TiktokIcon className="h-6 w-6" />
-          </IconToggleButton>
-          <IconToggleButton
             label={t("icon.twitch")}
-            active={values.twitchEnabled}
+            active={values.selectedPrimaryOption === "twitch"}
             disabled={submitting}
-            onClick={() => toggleMenuItem("twitch")}
+            onClick={() => togglePrimaryOption("twitch")}
           >
             <TwitchIcon className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
-            label={t("icon.food")}
-            active={values.foodEnabled}
+            label={t("icon.link")}
+            active={values.selectedPrimaryOption === "link"}
             disabled={submitting}
-            onClick={() => toggleMenuItem("food")}
+            onClick={() => togglePrimaryOption("link")}
           >
-            <FoodIcon className="h-6 w-6" />
+            <LinkIcon className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
-            label={t("icon.sport")}
-            active={values.sportEnabled}
+            label={t("icon.table")}
+            active={values.selectedPrimaryOption === "table"}
             disabled={submitting}
-            onClick={() => toggleMenuItem("sport")}
+            onClick={() => togglePrimaryOption("table")}
           >
-            <SportIcon className="h-6 w-6" />
+            <TableIcon className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
-            label={t("icon.travel")}
-            active={values.travelEnabled}
+            label={t("icon.enumeration")}
+            active={values.selectedPrimaryOption === "enumeration"}
             disabled={submitting}
-            onClick={() => toggleMenuItem("travel")}
+            onClick={() => togglePrimaryOption("enumeration")}
           >
-            <TravelIcon className="h-6 w-6" />
+            <ListBulletIcon className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
-            label={t("icon.weather")}
-            active={values.weatherEnabled}
+            label={t("icon.checklist")}
+            active={values.selectedPrimaryOption === "checklist"}
             disabled={submitting}
-            onClick={() => toggleMenuItem("weather")}
+            onClick={() => togglePrimaryOption("checklist")}
           >
-            <WeatherIcon className="h-6 w-6" />
+            <ChecklistIcon className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
-            label={t("icon.book")}
-            active={values.bookEnabled}
+            label={t("icon.survey")}
+            active={values.selectedPrimaryOption === "survey"}
             disabled={submitting}
-            onClick={() => toggleMenuItem("book")}
+            onClick={() => togglePrimaryOption("survey")}
           >
-            <BookIcon className="h-6 w-6" />
+            <SurveyIcon className="h-6 w-6" />
           </IconToggleButton>
-          <IconToggleButton
-            label={t("icon.alarm")}
-            active={values.alarmEnabled}
-            disabled={submitting}
-            onClick={() => toggleMenuItem("alarm")}
-          >
-            <BellAlertIcon className="h-6 w-6" />
+
+          <div className="col-span-4 my-1 hidden h-11 w-px justify-self-center bg-brand-200 sm:mx-3 sm:my-0 sm:block" />
+
+          <IconToggleButton label={t("icon.alarm")} active={values.alarmEnabled} disabled={submitting} onClick={toggleAlarm}>
+            <AlarmClockIcon className="h-6 w-6" />
           </IconToggleButton>
 
           <div className="col-span-4 pt-1 sm:ml-auto sm:flex sm:shrink-0 sm:pl-2 sm:pt-0">

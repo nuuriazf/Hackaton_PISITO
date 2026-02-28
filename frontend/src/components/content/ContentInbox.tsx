@@ -46,17 +46,7 @@ const INITIAL_INBOX_ENTRY_FORM: InboxEntryFormValues = {
   title: "",
   textContent: "",
   mediaFile: null,
-  musicEnabled: false,
-  linkEnabled: false,
-  photoEnabled: false,
-  youtubeEnabled: false,
-  tiktokEnabled: false,
-  twitchEnabled: false,
-  foodEnabled: false,
-  sportEnabled: false,
-  travelEnabled: false,
-  weatherEnabled: false,
-  bookEnabled: false,
+  selectedPrimaryOption: null,
   alarmEnabled: false
 };
 
