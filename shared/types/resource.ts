@@ -1,15 +1,36 @@
-export type ResourceType = "TEXT" | "LINK" | "VIDEO" | "IMAGE" | "PHOTO" | "FILE";
+export type ResourceType = "TEXT" | "LINK" | "MEDIA";
 
-export type SavedResource = {
+export type ResourceItem = {
   id: number;
   type: ResourceType;
   title: string | null;
   textContent: string | null;
-  externalUrl: string | null;
+  url: string | null;
   storageKey: string | null;
   fileName: string | null;
   mimeType: string | null;
-  accessUrl: string | null;
   createdAt: string;
 };
 
+export type EntryItem = {
+  id: number;
+  title: string;
+  resources: ResourceItem[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateEntryResourceInput = {
+  type: ResourceType;
+  title?: string;
+  textContent?: string;
+  url?: string;
+  storageKey?: string;
+  fileName?: string;
+  mimeType?: string;
+};
+
+export type CreateEntryInput = {
+  title: string;
+  resources?: CreateEntryResourceInput[];
+};

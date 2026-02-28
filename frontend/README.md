@@ -15,10 +15,11 @@ App en `http://localhost:5173`
 
 ## Flujo API usado
 
-- `GET /api/resources`
-- `POST /api/resources` para `TEXT`, `LINK`, `VIDEO`
-- `POST /api/resources/upload` para `IMAGE`, `PHOTO`, `FILE`
-- `DELETE /api/resources/{id}`
+- `GET /api/entries`
+- `POST /api/entries`
+- `POST /api/entries/{entryId}/resources/text`
+- `POST /api/entries/{entryId}/resources/link`
+- `POST /api/entries/{entryId}/resources/media`
 
 ## Build
 

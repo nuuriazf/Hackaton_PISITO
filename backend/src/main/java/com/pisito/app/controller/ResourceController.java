@@ -1,78 +1,60 @@
 package com.pisito.app.controller;
 
-import com.pisito.app.controller.dto.CreateResourceRequest;
+import com.pisito.app.controller.dto.CreateLinkResourceRequest;
+import com.pisito.app.controller.dto.CreateMediaResourceRequest;
+import com.pisito.app.controller.dto.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.ResourceResponse;
-import com.pisito.app.model.ResourceType;
-import com.pisito.app.service.ResourceService;
+import com.pisito.app.service.EntryService;
 import jakarta.validation.Valid;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/resources")
+@RequestMapping("/api/entries/{entryId}/resources")
 public class ResourceController {
 
-    private final ResourceService resourceService;
+    private final EntryService entryService;
 
-    public ResourceController(ResourceService resourceService) {
-        this.resourceService = resourceService;
+    public ResourceController(EntryService entryService) {
+        this.entryService = entryService;
     }
 
-    @GetMapping
-    public List<ResourceResponse> getAll() {
-        return resourceService.findAll();
-    }
-
-    @GetMapping("/{id}")
-    public ResourceResponse getById(@PathVariable Long id) {
-        return resourceService.findById(id);
-    }
-
-    @PostMapping
+    @PostMapping("/text")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResourceResponse create(@Valid @RequestBody CreateResourceRequest request) {
-        return resourceService.create(request);
-    }
-
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResourceResponse upload(
-        @RequestParam ResourceType type,
-        @RequestParam(required = false) String title,
-        @RequestParam("file") MultipartFile file
+    public ResourceResponse addTextResource(
+        @PathVariable Long entryId,
+        @Valid @RequestBody CreateTextResourceRequest request
     ) {
-        return resourceService.createFromUpload(type, title, file);
+        return entryService.addTextResource(entryId, request);
     }
 
-    @GetMapping("/files/{storageKey}")
-    public ResponseEntity<Resource> readUploadedFile(@PathVariable String storageKey) {
-        ResourceService.StoredFile storedFile = resourceService.loadStoredFile(storageKey);
-
-        return ResponseEntity.ok()
-            .contentType(MediaType.parseMediaType(storedFile.contentType()))
-            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + storedFile.fileName() + "\"")
-            .body(storedFile.resource());
+    @PostMapping("/link")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResourceResponse addLinkResource(
+        @PathVariable Long entryId,
+        @Valid @RequestBody CreateLinkResourceRequest request
+    ) {
+        return entryService.addLinkResource(entryId, request);
     }
 
-    @DeleteMapping("/{id}")
+    @PostMapping("/media")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResourceResponse addMediaResource(
+        @PathVariable Long entryId,
+        @Valid @RequestBody CreateMediaResourceRequest request
+    ) {
+        return entryService.addMediaResource(entryId, request);
+    }
+
+    @DeleteMapping("/{resourceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        resourceService.delete(id);
+    public void deleteResource(@PathVariable Long entryId, @PathVariable Long resourceId) {
+        entryService.deleteResource(entryId, resourceId);
     }
 }
-

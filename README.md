@@ -11,8 +11,7 @@ MVP actual orientado a guardar y visualizar:
 
 - texto
 - links
-- videos (URL)
-- imagenes/fotos/archivos (subida local en desarrollo)
+- media local (imagenes y video por path/storage)
 
 ## Estructura
 
@@ -62,19 +61,22 @@ Abrir:
 
 ## Comunicacion Front-Back (plantilla base)
 
-Frontend usa dos caminos:
+Modelo backend:
 
-1. JSON (`POST /api/resources`) para `TEXT`, `LINK`, `VIDEO`.
-2. Multipart (`POST /api/resources/upload`) para `IMAGE`, `PHOTO`, `FILE`.
+- `Entry` (titulo + lista de recursos)
+- `Resource` (clase padre)
+- Herencia de recursos: `TextResource`, `LinkResource`, `MediaResource`
 
 Backend expone:
 
-- `GET /api/resources`
-- `GET /api/resources/{id}`
-- `POST /api/resources`
-- `POST /api/resources/upload`
-- `GET /api/resources/files/{storageKey}`
-- `DELETE /api/resources/{id}`
+- `GET /api/entries`
+- `GET /api/entries/{entryId}`
+- `POST /api/entries` (titulo y opcional `resources[]`)
+- `POST /api/entries/{entryId}/resources/text`
+- `POST /api/entries/{entryId}/resources/link`
+- `POST /api/entries/{entryId}/resources/media`
+- `DELETE /api/entries/{entryId}/resources/{resourceId}`
+- `DELETE /api/entries/{entryId}`
 
 Contrato detallado en [`docs/api.md`](docs/api.md).
 
@@ -105,5 +107,5 @@ npm run build
 
 - No se usa Docker para mantener setup rapido.
 - Base de datos: H2 en memoria (ideal para hackaton/demo).
-- Si mas adelante migrais a Postgres/MySQL o Supabase, se cambia en `backend/src/main/resources/application.yml` y en la capa de subida de ficheros.
+- Si mas adelante migrais a Postgres/MySQL o Supabase, se cambia en `backend/src/main/resources/application.yml` y en la persistencia de `MediaResource`.
 

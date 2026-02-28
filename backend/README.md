@@ -18,12 +18,15 @@ H2 console en `http://localhost:8080/h2-console`
 ## Endpoints principales
 
 - `GET /api/health`
-- `GET /api/resources`
-- `GET /api/resources/{id}`
-- `POST /api/resources` (JSON: text/link/video o metadata de archivo)
-- `POST /api/resources/upload` (multipart: subida de archivo local)
-- `GET /api/resources/files/{storageKey}`
-- `DELETE /api/resources/{id}`
+- `GET /api/entries`
+- `GET /api/entries/{entryId}`
+- `POST /api/entries` (acepta `title` y opcional `resources[]`)
+- `PUT /api/entries/{entryId}`
+- `POST /api/entries/{entryId}/resources/text`
+- `POST /api/entries/{entryId}/resources/link`
+- `POST /api/entries/{entryId}/resources/media`
+- `DELETE /api/entries/{entryId}/resources/{resourceId}`
+- `DELETE /api/entries/{entryId}`
 
 ## Tests
 
