@@ -1,0 +1,216 @@
+package com.pisito.app.service;
+
+import com.pisito.app.controller.dto.CreateEntryRequest;
+import com.pisito.app.controller.dto.CreateEntryResourceRequest;
+import com.pisito.app.controller.dto.CreateLinkResourceRequest;
+import com.pisito.app.controller.dto.CreateMediaResourceRequest;
+import com.pisito.app.controller.dto.CreateTextResourceRequest;
+import com.pisito.app.controller.dto.EntryResponse;
+import com.pisito.app.controller.dto.ResourceResponse;
+import com.pisito.app.controller.dto.UpdateEntryRequest;
+import com.pisito.app.model.Entry;
+import com.pisito.app.model.LinkResource;
+import com.pisito.app.model.MediaResource;
+import com.pisito.app.model.Resource;
+import com.pisito.app.model.TextResource;
+import com.pisito.app.repository.EntryRepository;
+import com.pisito.app.repository.ResourceRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+
+@Service
+public class EntryService {
+
+    private final EntryRepository entryRepository;
+    private final ResourceRepository resourceRepository;
+
+    public EntryService(EntryRepository entryRepository, ResourceRepository resourceRepository) {
+        this.entryRepository = entryRepository;
+        this.resourceRepository = resourceRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<EntryResponse> findAll() {
+        return entryRepository.findAllByOrderByCreatedAtDesc().stream()
+            .map(this::toEntryResponse)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public EntryResponse findById(Long entryId) {
+        return toEntryResponse(getEntryOrThrow(entryId));
+    }
+
+    @Transactional
+    public EntryResponse createEntry(CreateEntryRequest request) {
+        Entry entry = new Entry();
+        entry.setTitle(trimRequired(request.getTitle(), "title is required"));
+        for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
+            entry.addResource(buildResource(resourceRequest));
+        }
+        return toEntryResponse(entryRepository.save(entry));
+    }
+
+    @Transactional
+    public EntryResponse updateEntry(Long entryId, UpdateEntryRequest request) {
+        Entry entry = getEntryOrThrow(entryId);
+        entry.setTitle(trimRequired(request.getTitle(), "title is required"));
+        entry.touch();
+        return toEntryResponse(entry);
+    }
+
+    @Transactional
+    public ResourceResponse addTextResource(Long entryId, CreateTextResourceRequest request) {
+        TextResource resource = new TextResource();
+        resource.setTitle(trimOrNull(request.getTitle()));
+        resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required"));
+        return saveResource(entryId, resource);
+    }
+
+    @Transactional
+    public ResourceResponse addLinkResource(Long entryId, CreateLinkResourceRequest request) {
+        LinkResource resource = new LinkResource();
+        resource.setTitle(trimOrNull(request.getTitle()));
+        resource.setUrl(trimRequired(request.getUrl(), "url is required"));
+        return saveResource(entryId, resource);
+    }
+
+    @Transactional
+    public ResourceResponse addMediaResource(Long entryId, CreateMediaResourceRequest request) {
+        MediaResource resource = new MediaResource();
+        resource.setTitle(trimOrNull(request.getTitle()));
+        resource.setStorageKey(trimRequired(request.getStorageKey(), "storageKey is required"));
+        resource.setFileName(trimOrNull(request.getFileName()));
+        resource.setMimeType(trimOrNull(request.getMimeType()));
+        return saveResource(entryId, resource);
+    }
+
+    @Transactional
+    public void deleteResource(Long entryId, Long resourceId) {
+        Resource resource = getResourceOrThrow(resourceId);
+        if (!resource.getEntry().getId().equals(entryId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
+        }
+        Entry entry = resource.getEntry();
+        entry.removeResource(resource);
+    }
+
+    @Transactional
+    public void deleteEntry(Long entryId) {
+        Entry entry = getEntryOrThrow(entryId);
+        entryRepository.delete(entry);
+    }
+
+    private ResourceResponse saveResource(Long entryId, Resource resource) {
+        Entry entry = getEntryOrThrow(entryId);
+        entry.addResource(resource);
+        return toResourceResponse(resourceRepository.save(resource));
+    }
+
+    private Resource buildResource(CreateEntryResourceRequest request) {
+        if (request.getType() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resource type is required");
+        }
+
+        return switch (request.getType()) {
+            case TEXT -> {
+                TextResource resource = new TextResource();
+                resource.setTitle(trimOrNull(request.getTitle()));
+                resource.setTextContent(
+                    trimRequired(request.getTextContent(), "textContent is required for TEXT")
+                );
+                yield resource;
+            }
+            case LINK -> {
+                LinkResource resource = new LinkResource();
+                resource.setTitle(trimOrNull(request.getTitle()));
+                resource.setUrl(trimRequired(request.getUrl(), "url is required for LINK"));
+                yield resource;
+            }
+            case MEDIA -> {
+                MediaResource resource = new MediaResource();
+                resource.setTitle(trimOrNull(request.getTitle()));
+                resource.setStorageKey(
+                    trimRequired(request.getStorageKey(), "storageKey is required for MEDIA")
+                );
+                resource.setFileName(trimOrNull(request.getFileName()));
+                resource.setMimeType(trimOrNull(request.getMimeType()));
+                yield resource;
+            }
+        };
+    }
+
+    private Entry getEntryOrThrow(Long entryId) {
+        return entryRepository.findById(entryId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
+    }
+
+    private Resource getResourceOrThrow(Long resourceId) {
+        return resourceRepository.findById(resourceId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
+    }
+
+    private EntryResponse toEntryResponse(Entry entry) {
+        List<ResourceResponse> resources = entry.getResources().stream()
+            .map(this::toResourceResponse)
+            .toList();
+
+        return new EntryResponse(
+            entry.getId(),
+            entry.getTitle(),
+            resources,
+            entry.getCreatedAt(),
+            entry.getUpdatedAt()
+        );
+    }
+
+    private ResourceResponse toResourceResponse(Resource resource) {
+        String textContent = null;
+        String url = null;
+        String storageKey = null;
+        String fileName = null;
+        String mimeType = null;
+
+        if (resource instanceof TextResource textResource) {
+            textContent = textResource.getTextContent();
+        } else if (resource instanceof LinkResource linkResource) {
+            url = linkResource.getUrl();
+        } else if (resource instanceof MediaResource mediaResource) {
+            storageKey = mediaResource.getStorageKey();
+            fileName = mediaResource.getFileName();
+            mimeType = mediaResource.getMimeType();
+        }
+
+        return new ResourceResponse(
+            resource.getId(),
+            resource.getType(),
+            resource.getTitle(),
+            textContent,
+            url,
+            storageKey,
+            fileName,
+            mimeType,
+            resource.getCreatedAt()
+        );
+    }
+
+    private static String trimOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String trimRequired(String value, String errorMessage) {
+        if (!StringUtils.hasText(value)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage);
+        }
+        return value.trim();
+    }
+}

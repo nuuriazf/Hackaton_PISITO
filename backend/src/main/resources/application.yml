@@ -16,8 +16,3 @@ spring:
 
 server:
   port: 8080
-
-app:
-  storage:
-    local-upload-dir: uploads
-    public-file-base-path: /api/resources/files

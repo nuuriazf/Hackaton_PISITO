@@ -1,34 +1,54 @@
 import { api } from "./client";
-import type { CreateResourceInput, ResourceType, SavedResource } from "../types/resource";
+import type {
+  CreateEntryInput,
+  CreateLinkResourceInput,
+  CreateMediaResourceInput,
+  CreateTextResourceInput,
+  EntryItem,
+  ResourceItem
+} from "../types/resource";
 
-export function fetchResources() {
-  return api<SavedResource[]>("/resources");
+export function fetchEntries() {
+  return api<EntryItem[]>("/entries");
 }
 
-export function createResource(input: CreateResourceInput) {
-  return api<SavedResource>("/resources", {
+export function createEntry(input: string | CreateEntryInput) {
+  const payload = typeof input === "string" ? { title: input } : input;
+  return api<EntryItem>("/entries", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function createTextResource(entryId: number, input: CreateTextResourceInput) {
+  return api<ResourceItem>(`/entries/${entryId}/resources/text`, {
     method: "POST",
     body: JSON.stringify(input)
   });
 }
 
-export function uploadResourceFile(type: ResourceType, file: File, title?: string) {
-  const form = new FormData();
-  form.append("type", type);
-  form.append("file", file);
-  if (title?.trim()) {
-    form.append("title", title.trim());
-  }
-
-  return api<SavedResource>("/resources/upload", {
+export function createLinkResource(entryId: number, input: CreateLinkResourceInput) {
+  return api<ResourceItem>(`/entries/${entryId}/resources/link`, {
     method: "POST",
-    body: form
+    body: JSON.stringify(input)
   });
 }
 
-export function deleteResource(id: number) {
-  return api<void>(`/resources/${id}`, {
+export function createMediaResource(entryId: number, input: CreateMediaResourceInput) {
+  return api<ResourceItem>(`/entries/${entryId}/resources/media`, {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function deleteResource(entryId: number, resourceId: number) {
+  return api<void>(`/entries/${entryId}/resources/${resourceId}`, {
     method: "DELETE"
   });
 }
 
+export function deleteEntry(entryId: number) {
+  return api<void>(`/entries/${entryId}`, {
+    method: "DELETE"
+  });
+}

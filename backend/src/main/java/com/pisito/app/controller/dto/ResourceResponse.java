@@ -9,11 +9,10 @@ public record ResourceResponse(
     ResourceType type,
     String title,
     String textContent,
-    String externalUrl,
+    String url,
     String storageKey,
     String fileName,
     String mimeType,
-    String accessUrl,
     Instant createdAt
 ) {
 }

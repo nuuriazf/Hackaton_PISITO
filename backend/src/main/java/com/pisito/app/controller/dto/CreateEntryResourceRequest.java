@@ -4,7 +4,7 @@ import com.pisito.app.model.ResourceType;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public class CreateResourceRequest {
+public class CreateEntryResourceRequest {
 
     @NotNull
     private ResourceType type;
@@ -16,7 +16,7 @@ public class CreateResourceRequest {
     private String textContent;
 
     @Size(max = 1000)
-    private String externalUrl;
+    private String url;
 
     @Size(max = 255)
     private String storageKey;
@@ -51,12 +51,12 @@ public class CreateResourceRequest {
         this.textContent = textContent;
     }
 
-    public String getExternalUrl() {
-        return externalUrl;
+    public String getUrl() {
+        return url;
     }
 
-    public void setExternalUrl(String externalUrl) {
-        this.externalUrl = externalUrl;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public String getStorageKey() {
@@ -83,4 +83,3 @@ public class CreateResourceRequest {
         this.mimeType = mimeType;
     }
 }
-

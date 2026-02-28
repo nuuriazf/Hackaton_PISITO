@@ -4,9 +4,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
@@ -14,33 +19,23 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "resources")
-public class SavedResource {
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class Resource {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "entry_id", nullable = false)
+    private Entry entry;
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "resource_type", nullable = false, length = 20)
     private ResourceType type;
 
     @Column(length = 120)
     private String title;
-
-    @Column(name = "text_content", length = 4000)
-    private String textContent;
-
-    @Column(name = "external_url", length = 1000)
-    private String externalUrl;
-
-    @Column(name = "storage_key", length = 255)
-    private String storageKey;
-
-    @Column(name = "file_name", length = 255)
-    private String fileName;
-
-    @Column(name = "mime_type", length = 120)
-    private String mimeType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -60,11 +55,19 @@ public class SavedResource {
         this.id = id;
     }
 
+    public Entry getEntry() {
+        return entry;
+    }
+
+    public void setEntry(Entry entry) {
+        this.entry = entry;
+    }
+
     public ResourceType getType() {
         return type;
     }
 
-    public void setType(ResourceType type) {
+    protected void setType(ResourceType type) {
         this.type = type;
     }
 
@@ -74,46 +77,6 @@ public class SavedResource {
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public String getTextContent() {
-        return textContent;
-    }
-
-    public void setTextContent(String textContent) {
-        this.textContent = textContent;
-    }
-
-    public String getExternalUrl() {
-        return externalUrl;
-    }
-
-    public void setExternalUrl(String externalUrl) {
-        this.externalUrl = externalUrl;
-    }
-
-    public String getStorageKey() {
-        return storageKey;
-    }
-
-    public void setStorageKey(String storageKey) {
-        this.storageKey = storageKey;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public String getMimeType() {
-        return mimeType;
-    }
-
-    public void setMimeType(String mimeType) {
-        this.mimeType = mimeType;
     }
 
     public Instant getCreatedAt() {

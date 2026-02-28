@@ -1,4 +1,4 @@
-# API Contract (MVP)
+# API Contract (Entry + Resources)
 
 Base URL: `http://localhost:8080`
 
@@ -10,93 +10,118 @@ Base URL: `http://localhost:8080`
     { "status": "ok" }
     ```
 
-## Resource model
+## Domain model
 
-```json
-{
-  "id": 1,
-  "type": "TEXT",
-  "title": "Nota inicial",
-  "textContent": "Contenido textual",
-  "externalUrl": null,
-  "storageKey": null,
-  "fileName": null,
-  "mimeType": null,
-  "accessUrl": null,
-  "createdAt": "2026-02-27T23:30:00Z"
-}
-```
+- `Entry`
+  - `id`
+  - `title`
+  - `createdAt`
+  - `updatedAt`
+  - `resources[]`
 
-Tipos soportados:
+- `Resource` (abstract parent)
+  - `id`
+  - `type`: `TEXT | LINK | MEDIA`
+  - `title`
+  - `createdAt`
 
-- `TEXT`: texto libre del usuario.
-- `LINK`: URL externa.
-- `VIDEO`: URL de video (YouTube, Vimeo, etc.).
-- `IMAGE`, `PHOTO`, `FILE`: archivos subidos desde el dispositivo.
+- Resource subtypes
+  - `TextResource`: `textContent`
+  - `LinkResource`: `url`
+  - `MediaResource`: `storageKey`, `fileName`, `mimeType`
 
-## Endpoints actuales
+## Entry endpoints
 
-- `GET /api/resources`
-  - Lista todos los recursos (ordenados por fecha desc).
+- `GET /api/entries`
+  - Lista todas las entradas con sus recursos.
 
-- `GET /api/resources/{id}`
-  - Devuelve un recurso concreto.
+- `GET /api/entries/{entryId}`
+  - Devuelve una entrada concreta.
   - `404` si no existe.
 
-- `POST /api/resources`
-  - Crea un recurso por JSON (sin multipart).
-  - Uso recomendado:
-    - `TEXT` con `textContent`
-    - `LINK` / `VIDEO` con `externalUrl`
-    - `IMAGE` / `PHOTO` / `FILE` con `storageKey` (si el archivo ya existe en storage externo)
-  - Request ejemplo `TEXT`:
+- `POST /api/entries`
+  - Crea una entry con titulo y, opcionalmente, recursos iniciales.
+  - Request:
     ```json
     {
-      "type": "TEXT",
-      "title": "Idea",
-      "textContent": "Guardar nota rapida"
+      "title": "Ideas de producto",
+      "resources": [
+        {
+          "type": "TEXT",
+          "title": "Nota inicial",
+          "textContent": "Texto plano del usuario"
+        },
+        {
+          "type": "LINK",
+          "title": "Referencia",
+          "url": "https://supabase.com/docs"
+        },
+        {
+          "type": "MEDIA",
+          "title": "Media local",
+          "storageKey": "media/foto-1.jpg",
+          "fileName": "foto-1.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ]
     }
     ```
-  - Request ejemplo `LINK`:
+  - Response `201`: entry creada.
+
+- `PUT /api/entries/{entryId}`
+  - Request:
     ```json
     {
-      "type": "LINK",
+      "title": "Nuevo titulo"
+    }
+    ```
+  - Response `200`: entry actualizada.
+  - `404` si no existe.
+
+- `DELETE /api/entries/{entryId}`
+  - Response `204`: entry eliminada.
+  - `404` si no existe.
+
+## Resource endpoints (dentro de una Entry)
+
+- `POST /api/entries/{entryId}/resources/text`
+  - Request:
+    ```json
+    {
+      "title": "Nota",
+      "textContent": "Texto plano del usuario"
+    }
+    ```
+
+- `POST /api/entries/{entryId}/resources/link`
+  - Request:
+    ```json
+    {
       "title": "Referencia",
-      "externalUrl": "https://supabase.com/docs"
+      "url": "https://supabase.com/docs"
     }
     ```
 
-- `POST /api/resources/upload` (`multipart/form-data`)
-  - Crea recurso + guarda archivo local (modo dev sin Supabase).
-  - Campos:
-    - `type`: `IMAGE | PHOTO | FILE`
-    - `title`: opcional
-    - `file`: archivo binario
-  - Response `201`: devuelve el recurso con `storageKey` y `accessUrl`.
+- `POST /api/entries/{entryId}/resources/media`
+  - Request:
+    ```json
+    {
+      "title": "Media local",
+      "storageKey": "media/asset-1.mp4",
+      "fileName": "asset-1.mp4",
+      "mimeType": "video/mp4"
+    }
+    ```
 
-- `GET /api/resources/files/{storageKey}`
-  - Devuelve el archivo subido (para previsualizar o descargar).
+- `DELETE /api/entries/{entryId}/resources/{resourceId}`
+  - Response `204`: recurso eliminado.
+  - `404` si no existe o no pertenece a esa entry.
 
-- `DELETE /api/resources/{id}`
-  - Elimina recurso.
-  - `404` si no existe.
+## Flujo recomendado
 
-## Flujo front-back recomendado
+1. Front crea una `Entry` con `POST /api/entries`.
+2. Front anade recursos tipados a esa entry con los endpoints `/resources/{type}`.
+3. Front consulta `GET /api/entries` para pintar el contenido completo.
 
-1. Usuario escribe texto/link/video o selecciona archivo.
-2. Front envia:
-   - `POST /api/resources` para `TEXT`, `LINK`, `VIDEO`.
-   - `POST /api/resources/upload` para `IMAGE`, `PHOTO`, `FILE`.
-3. Back persiste metadatos en DB y devuelve el objeto `Resource`.
-4. Front refresca `GET /api/resources` y renderiza la lista.
 
-## Preparado para Supabase (siguiente paso)
-
-Cuando conecteis Supabase Storage, mantened el contrato y cambiad solo la capa de subida:
-
-1. `POST /api/uploads/presign` (nuevo endpoint futuro) para pedir URL firmada.
-2. Front sube archivo directo a Supabase con esa URL.
-3. Front llama `POST /api/resources` con `storageKey` y metadatos.
-
-Asi evitais mover archivos por vuestro backend y manteneis el mismo modelo de datos.
 
