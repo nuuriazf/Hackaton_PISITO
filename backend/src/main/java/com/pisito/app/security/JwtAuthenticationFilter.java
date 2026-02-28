@@ -1,6 +1,6 @@
 package com.pisito.app.security;
 
-import com.pisito.app.model.AppUser;
+import com.pisito.app.model.User;
 import com.pisito.app.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -50,7 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            AppUser user = userRepository.findById(userId).orElse(null);
+            User user = userRepository.findById(userId).orElse(null);
             if (user != null && jwtService.isTokenValid(token, user)) {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     user.getId(),
