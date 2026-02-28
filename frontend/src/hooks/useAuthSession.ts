@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { getMe, login, register } from "../api/auth";
+import { getMe, login, register, updatePassword, updateUsername } from "../api/auth";
 import { clearAccessToken, getAccessToken, setAccessToken } from "../api/client";
-import type { AuthCredentials, AuthTokenResponse, AuthUser } from "../types/auth";
+import type {
+  AuthCredentials,
+  AuthTokenResponse,
+  AuthUser,
+  UpdatePasswordInput,
+  UpdateUsernameInput
+} from "../types/auth";
 import { readErrorMessage } from "../utils/error";
 
 const SESSION_EXPIRED_MESSAGE = "Tu sesion ya no es valida. Vuelve a iniciar sesion.";
@@ -55,8 +61,10 @@ export function useAuthSession() {
       const response = await request();
       setAccessToken(response.accessToken);
       setAuthUser(response.user);
+      return true;
     } catch (error) {
       setAuthError(readErrorMessage(error));
+      return false;
     } finally {
       setAuthSubmitting(false);
     }
@@ -71,6 +79,20 @@ export function useAuthSession() {
     async (credentials: AuthCredentials) => executeAuth(() => register(credentials)),
     [executeAuth]
   );
+
+  const updateUsernameUser = useCallback(
+    async (input: UpdateUsernameInput) => executeAuth(() => updateUsername(input)),
+    [executeAuth]
+  );
+
+  const updatePasswordUser = useCallback(
+    async (input: UpdatePasswordInput) => executeAuth(() => updatePassword(input)),
+    [executeAuth]
+  );
+
+  const clearAuthError = useCallback(() => {
+    setAuthError(null);
+  }, []);
 
   const logout = useCallback(() => {
     clearAccessToken();
@@ -91,6 +113,9 @@ export function useAuthSession() {
     authError,
     loginUser,
     registerUser,
+    updateUsernameUser,
+    updatePasswordUser,
+    clearAuthError,
     logout,
     expireSession
   };

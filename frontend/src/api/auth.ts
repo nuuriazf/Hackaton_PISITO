@@ -1,5 +1,11 @@
 import { api } from "./client";
-import type { AuthCredentials, AuthTokenResponse, AuthUser } from "../types/auth";
+import type {
+  AuthCredentials,
+  AuthTokenResponse,
+  AuthUser,
+  UpdatePasswordInput,
+  UpdateUsernameInput
+} from "../types/auth";
 
 export function register(credentials: AuthCredentials) {
   return api<AuthTokenResponse>("/auth/register", {
@@ -17,4 +23,18 @@ export function login(credentials: AuthCredentials) {
 
 export function getMe() {
   return api<AuthUser>("/auth/me");
+}
+
+export function updateUsername(input: UpdateUsernameInput) {
+  return api<AuthTokenResponse>("/auth/me/username", {
+    method: "PUT",
+    body: JSON.stringify(input)
+  });
+}
+
+export function updatePassword(input: UpdatePasswordInput) {
+  return api<AuthTokenResponse>("/auth/me/password", {
+    method: "PUT",
+    body: JSON.stringify(input)
+  });
 }

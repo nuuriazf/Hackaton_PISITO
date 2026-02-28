@@ -57,10 +57,10 @@ public class AuthService {
         String rawPassword = validatePassword(request.getPassword(), "password is required");
 
         AppUser user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ese usuario no existe"));
 
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Contrasena incorrecta");
         }
 
         user.markLogin();

@@ -10,12 +10,15 @@ import com.pisito.app.security.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -74,6 +77,41 @@ class AuthServiceIntegrationTests {
 
         AppUser persisted = userRepository.findById(created.user().id()).orElseThrow();
         assertThat(persisted.getLastLoginAt()).isNotNull();
+    }
+
+    @Test
+    void loginShouldReturnNotFoundWhenUserDoesNotExist() {
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername("missing_user");
+        loginRequest.setPassword("abc12345");
+
+        assertThatThrownBy(() -> authService.login(loginRequest))
+            .isInstanceOf(ResponseStatusException.class)
+            .satisfies(error -> {
+                ResponseStatusException exception = (ResponseStatusException) error;
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                assertThat(exception.getReason()).isEqualTo("Ese usuario no existe");
+            });
+    }
+
+    @Test
+    void loginShouldReturnUnauthorizedWhenPasswordIsIncorrect() {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUsername("demo_bad_password");
+        registerRequest.setPassword("abc12345");
+        authService.register(registerRequest);
+
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername("demo_bad_password");
+        loginRequest.setPassword("wrongpass1");
+
+        assertThatThrownBy(() -> authService.login(loginRequest))
+            .isInstanceOf(ResponseStatusException.class)
+            .satisfies(error -> {
+                ResponseStatusException exception = (ResponseStatusException) error;
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+                assertThat(exception.getReason()).isEqualTo("Contrasena incorrecta");
+            });
     }
 
     @Test
