@@ -4,6 +4,7 @@ import com.pisito.app.controller.dto.CreateEntryRequest;
 import com.pisito.app.controller.dto.CreateEntryResourceRequest;
 import com.pisito.app.controller.dto.CreateLinkResourceRequest;
 import com.pisito.app.controller.dto.CreateMediaResourceRequest;
+import com.pisito.app.controller.dto.CreateNoteRequest;
 import com.pisito.app.controller.dto.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.EntryResponse;
 import com.pisito.app.controller.dto.ResourceResponse;
@@ -29,10 +30,16 @@ public class EntryService {
 
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
+    private final OllamaTitleService ollamaTitleService;
 
-    public EntryService(EntryRepository entryRepository, ResourceRepository resourceRepository) {
+    public EntryService(
+        EntryRepository entryRepository,
+        ResourceRepository resourceRepository,
+        OllamaTitleService ollamaTitleService
+    ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
+        this.ollamaTitleService = ollamaTitleService;
     }
 
     @Transactional(readOnly = true)
@@ -55,6 +62,24 @@ public class EntryService {
         for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
             entry.addResource(buildResource(resourceRequest));
         }
+        return toEntryResponse(entryRepository.save(entry));
+    }
+
+    @Transactional
+    public EntryResponse createNote(CreateNoteRequest request) {
+        String noteContent = trimRequired(request.getContent(), "content is required");
+        String title = trimOrNull(request.getTitle());
+        if (!StringUtils.hasText(title)) {
+            title = ollamaTitleService.generateTitle(noteContent);
+        }
+        Entry entry = new Entry();
+        entry.setTitle(trimRequired(title, "title is required"));
+        entry.setUserId(request.getUserId());
+
+        TextResource resource = new TextResource();
+        resource.setText(noteContent);
+        entry.addResource(resource);
+
         return toEntryResponse(entryRepository.save(entry));
     }
 
