@@ -27,30 +27,33 @@ public class Entry {
     @Column(nullable = false, length = 120)
     private String title;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    @Column(name = "createDate", nullable = false, updatable = false)
+    private Instant createDate;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    @Column(name = "updateDate", nullable = false)
+    private Instant updateDate;
+
+    @Column(name = "userId", nullable = false)
+    private Long userId;
 
     @OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("createdAt DESC")
+    @OrderBy("id DESC")
     private List<Resource> resources = new ArrayList<>();
 
     @PrePersist
     public void onCreate() {
         Instant now = Instant.now();
-        if (createdAt == null) {
-            createdAt = now;
+        if (createDate == null) {
+            createDate = now;
         }
-        if (updatedAt == null) {
-            updatedAt = now;
+        if (updateDate == null) {
+            updateDate = now;
         }
     }
 
     @PreUpdate
     public void onUpdate() {
-        updatedAt = Instant.now();
+        updateDate = Instant.now();
     }
 
     public void addResource(Resource resource) {
@@ -66,7 +69,7 @@ public class Entry {
     }
 
     public void touch() {
-        updatedAt = Instant.now();
+        updateDate = Instant.now();
     }
 
     public Long getId() {
@@ -85,20 +88,28 @@ public class Entry {
         this.title = title;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getCreateDate() {
+        return createDate;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateDate(Instant createDate) {
+        this.createDate = createDate;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public Instant getUpdateDate() {
+        return updateDate;
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setUpdateDate(Instant updateDate) {
+        this.updateDate = updateDate;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public List<Resource> getResources() {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchEntries } from "../services/backendService";
+import { getEntries } from "../services/backendService";
 import type { Entry } from "../types/entry";
 
 function BackendResourcesPreview() {
@@ -12,7 +12,7 @@ function BackendResourcesPreview() {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchEntries();
+        const data = await getEntries();
         setItems(data);
       } catch (err) {
         setError((err as Error).message);

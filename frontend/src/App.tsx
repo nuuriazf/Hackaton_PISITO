@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchEntries, uploadDocument } from "./services/backendService";
+import { getEntries, uploadFile } from "./services/backendService";
 import type { Entry } from "./types/entry";
 
 function App() {
@@ -14,7 +14,7 @@ function App() {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchEntries();
+      const data = await getEntries();
       setEntries(data);
     } catch (err) {
       setError((err as Error).message);
@@ -37,7 +37,7 @@ function App() {
       setUploading(true);
       setUploadMessage(null);
       setError(null);
-      await uploadDocument(selectedFile);
+      await uploadFile(selectedFile);
       setUploadMessage("Archivo subido correctamente.");
       setSelectedFile(null);
       await loadEntries();

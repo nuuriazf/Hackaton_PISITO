@@ -13,7 +13,23 @@ mvn spring-boot:run
 
 API en `http://localhost:8080`
 
-H2 console en `http://localhost:8080/h2-console`
+Configuracion de base de datos (Supabase/Postgres) en `src/main/resources/application.yml`.
+Se recomienda configurar credenciales por variables de entorno:
+
+- `SUPABASE_DB_URL`
+- `SUPABASE_DB_USER`
+- `SUPABASE_DB_PASSWORD`
+
+Ejemplo para Supabase (Session Pooler):
+
+```powershell
+$env:SUPABASE_DB_URL="jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require"
+$env:SUPABASE_DB_USER="postgres.<tu_project_ref>"
+$env:SUPABASE_DB_PASSWORD="<tu_password>"
+mvn spring-boot:run
+```
+
+No subas credenciales reales al repositorio. Si una password ya se expuso, rotala en Supabase.
 
 ## Endpoints principales
 
@@ -33,5 +49,7 @@ H2 console en `http://localhost:8080/h2-console`
 ```bash
 mvn test
 ```
+
+Los tests no deben depender de Supabase. Si anades tests de integracion, usa un perfil/configuracion de test aislado.
 
 
