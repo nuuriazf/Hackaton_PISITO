@@ -4,6 +4,7 @@ import com.pisito.app.controller.dto.resource.CreateLinkResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateMediaResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.resource.ResourceResponse;
+import com.pisito.app.controller.dto.resource.UpdateTextResourceRequest;
 import com.pisito.app.service.EntryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -54,6 +56,16 @@ public class ResourceController {
         @Valid @RequestBody CreateMediaResourceRequest request
     ) {
         return entryService.addMediaResource(currentUserId(authentication), entryId, request);
+    }
+
+    @PutMapping("/{resourceId}/text")
+    public ResourceResponse updateTextResource(
+        Authentication authentication,
+        @PathVariable Long entryId,
+        @PathVariable Long resourceId,
+        @Valid @RequestBody UpdateTextResourceRequest request
+    ) {
+        return entryService.updateTextResource(currentUserId(authentication), entryId, resourceId, request);
     }
 
     @DeleteMapping("/{resourceId}")

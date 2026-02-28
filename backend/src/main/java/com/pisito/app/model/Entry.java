@@ -10,6 +10,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
@@ -19,7 +21,9 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "entries")
@@ -52,6 +56,14 @@ public class Entry {
     @OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt DESC")
     private List<Resource> resources = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "entry_folders",
+        joinColumns = @JoinColumn(name = "entry_id"),
+        inverseJoinColumns = @JoinColumn(name = "folder_id")
+    )
+    private Set<Folder> folders = new LinkedHashSet<>();
 
     @PrePersist
     public void onCreate() {
@@ -86,6 +98,18 @@ public class Entry {
 
     public void touch() {
         updateDate = Instant.now();
+    }
+
+    public void addFolder(Folder folder) {
+        folders.add(folder);
+        folder.getEntries().add(this);
+        touch();
+    }
+
+    public void removeFolder(Folder folder) {
+        folders.remove(folder);
+        folder.getEntries().remove(this);
+        touch();
     }
 
     public Long getId() {
@@ -151,4 +175,5 @@ public class Entry {
     public void setResources(List<Resource> resources) {
         this.resources = resources;
     }
+
 }

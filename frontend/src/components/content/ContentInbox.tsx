@@ -678,6 +678,8 @@ export function ContentInbox({
               error={storageError}
               searchValue={storageSearchValue}
               onSearchChange={setStorageSearchValue}
+              onEntriesUpdated={loadStorageEntries}
+              onUnauthorized={onLogout}
             />
           ) : (
             <section className="rounded-card border border-brand-200 bg-white/95 p-8 text-center shadow-card md:p-10">
