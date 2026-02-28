@@ -93,11 +93,11 @@ export function StorageEntriesSection({
   }, [selectedEntryId]);
 
   return (
-    <section className="grid gap-4">
-      <section className="rounded-card border border-brand-200 bg-white shadow-card">
+    <section className="grid gap-4 inbox-glass-text">
+      <section className="glass-card h-auto w-full max-w-full">
         <div className="grid gap-3 px-4 py-4 md:px-5">
           <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink-900">
-            {t("section.storage")}
+            {t("storage.pageTitle")}
           </h2>
           <label className={fieldLabelClass}>
             <input
@@ -113,15 +113,15 @@ export function StorageEntriesSection({
       </section>
 
       {loading ? (
-        <section className="rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
+        <section className="glass-card h-auto w-full max-w-full p-4 md:p-5">
           <p className="text-sm font-medium text-ink-600">{t("storage.loading")}</p>
         </section>
       ) : error ? (
-        <section className="rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
+        <section className="glass-card h-auto w-full max-w-full p-4 md:p-5">
           <p className={errorTextClass}>{t("common.errorPrefix", { message: error })}</p>
         </section>
       ) : filteredEntries.length === 0 ? (
-        <section className="rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
+        <section className="glass-card h-auto w-full max-w-full p-4 md:p-5">
           <p className="text-sm font-medium text-ink-600">
             {searchValue.trim() ? t("storage.emptyFiltered") : t("storage.empty")}
           </p>
@@ -137,10 +137,10 @@ export function StorageEntriesSection({
                 <button
                   key={entry.id}
                   type="button"
-                  className={`relative grid gap-2 rounded-card border bg-white p-4 text-left shadow-card transition ${
+                  className={`glass-card relative grid h-auto w-full max-w-full gap-2 p-4 text-left transition ${
                     selected
                       ? "border-brand-500 ring-2 ring-brand-100"
-                      : "border-brand-200 hover:bg-brand-50"
+                      : "hover:bg-brand-50"
                   }`}
                   onClick={() => setSelectedEntryId(entry.id)}
                 >

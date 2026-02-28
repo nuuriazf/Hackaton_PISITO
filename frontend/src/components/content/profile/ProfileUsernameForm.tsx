@@ -44,7 +44,12 @@ export function ProfileUsernameForm({
         placeholder={t("profile.currentPasswordPlaceholder")}
         onChange={(event) => onCurrentPasswordChange(event.target.value)}
       />
-      <Button type="submit" variant="primary" disabled={submitting}>
+      <Button
+        type="submit"
+        variant="primary"
+        className="profile-save-btn !text-[#F2F2F2] [--btn-text-hover:#F2F2F2]"
+        disabled={submitting}
+      >
         {submitting ? t("common.saving") : t("profile.saveUsername")}
       </Button>
     </form>

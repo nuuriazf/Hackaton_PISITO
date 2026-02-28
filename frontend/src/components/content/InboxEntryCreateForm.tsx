@@ -46,8 +46,8 @@ function toggleButtonClass(active: boolean) {
   return [
     "glass-surface flex h-11 w-11 items-center justify-center border transition",
     active
-      ? "border-white bg-black/20 text-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-      : "text-brand-700 hover:bg-white/20"
+      ? "border-white bg-black/20 text-[#111827] shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+      : "text-[#111827] hover:bg-white/20"
   ].join(" ");
 }
 
@@ -71,7 +71,7 @@ function IconToggleButton({ label, active, disabled = false, onClick, children }
       >
         {children}
       </button>
-      <span className="pointer-events-none absolute left-1/2 top-0 z-[200] -translate-x-1/2 -translate-y-[calc(100%+6px)] whitespace-nowrap rounded-md bg-ink-900 px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 peer-hover:opacity-100 peer-focus-visible:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-0 z-[200] -translate-x-1/2 -translate-y-[calc(100%+6px)] whitespace-nowrap rounded-md bg-white/90 px-2 py-1 text-xs font-semibold text-[#111827] opacity-0 shadow-sm transition-opacity duration-150 peer-hover:opacity-100 peer-focus-visible:opacity-100">
         {label}
       </span>
     </div>
@@ -132,11 +132,11 @@ export function InboxEntryCreateForm({
 
   return (
     <form className="grid w-full gap-3 font-sans inbox-glass-text" onSubmit={handleSubmit}>
-      <section className="glass-card h-auto w-full max-w-full p-5 md:p-6 [&_label>span]:text-[#FFFFFF]">
+      <section className="glass-card h-auto w-full max-w-full p-5 md:p-6 ">
         {heading ? (
           <div className="mb-4">
             <h2
-              className="text-center text-[19px] font-medium tracking-tight text-[#FFFFFF]"
+              className="text-center text-[19px] font-medium tracking-tight text-[#111827]"
               style={{ fontFamily: "Inter, sans-serif" }}
             >
               {t("inbox.composerHeading")}
@@ -188,8 +188,8 @@ export function InboxEntryCreateForm({
             <div
               className={`rounded-control border-2 border-dashed px-4 py-5 text-center transition ${
                 isFileDropActive
-                  ? "border-[#FFFFFF] bg-[#FFFFFF]/20 text-[#FFFFFF]"
-                  : "border-[#FFFFFF] bg-[#FFFFFF]/10 text-[#FFFFFF]"
+                  ? "border-[#FFFFFF] bg-[#FFFFFF]/20 text-[#111827]"
+                  : "border-[#FFFFFF] bg-[#FFFFFF]/10 text-[#111827]"
               }`}
             >
               <div className="flex flex-col items-center justify-center gap-2">

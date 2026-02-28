@@ -61,7 +61,9 @@ function footerButtonClass(active: boolean, withRightBorder: boolean) {
   return [
     footerButtonBaseClass,
     withRightBorder ? "border-r border-brand-200" : "",
-    active ? "bg-brand-200 text-brand-800" : "bg-white/85 text-ink-700 hover:bg-brand-100"
+    active
+      ? "bg-[#111827] text-white"
+      : "bg-white/85 text-ink-700 hover:bg-[linear-gradient(180deg,rgba(12,116,137,0)_0%,rgba(12,116,137,0.7)_100%)] hover:text-white"
   ]
     .filter(Boolean)
     .join(" ");
@@ -432,14 +434,17 @@ export function ContentInbox({
   }
 
   return (
-    <section className="relative h-screen overflow-hidden bg-gradient-to-br from-[#13505B] to-[#119DA4]">
-      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-brand-200 bg-white/90 px-4 backdrop-blur-sm sm:px-6">
+    <section className="min-h-screen bg-gradient-to-br from-[#13505B] to-[#119DA4] p-3 sm:p-4">
+      <div className="mx-auto flex min-h-[calc(100vh-0.75rem)] items-center justify-center sm:min-h-[calc(100vh-1rem)]">
+        <div className="relative h-[750px] w-[1000px] max-h-[calc(100vh-1rem)] max-w-[calc(100vw-1rem)] rounded-[32px] border border-white/20 bg-white/12 p-1.5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:max-h-[calc(100vh-2rem)] sm:max-w-[calc(100vw-2rem)]">
+        <section className="relative h-full w-full overflow-hidden rounded-[26px] border border-white/35 bg-[#F0F0F0]">
+      <header className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-brand-200 bg-white/90 px-4 backdrop-blur-sm sm:px-6">
         <h1 className="text-lg font-extrabold tracking-tight text-ink-900">{t("app.name")}</h1>
         <div className="relative flex items-center gap-2" ref={headerMenusRef}>
           <div className="relative">
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white text-brand-700 transition hover:bg-brand-100"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white text-brand-700 transition hover:bg-[rgba(17,157,164,0.65)]"
               aria-label={t("notifications.ariaButton")}
               aria-haspopup="menu"
               aria-expanded={notificationsOpen}
@@ -463,7 +468,7 @@ export function ContentInbox({
           <div className="relative">
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white text-brand-700 transition hover:bg-brand-100"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white text-brand-700 transition hover:bg-[rgba(17,157,164,0.65)]"
               aria-label={t("settings.ariaButton")}
               aria-haspopup="menu"
               aria-expanded={settingsOpen}
@@ -523,7 +528,7 @@ export function ContentInbox({
         <div className="mx-auto w-full max-w-[840px] py-2">
           {activeSection === "profile" ? (
             <section className="flex w-full flex-col gap-4">
-              <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
+              <section className="glass-card inbox-glass-text h-auto w-full max-w-full p-5 md:p-6">
                 <div className="mb-4">
                   <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink-900">
                     {t("profile.title")}
@@ -537,12 +542,12 @@ export function ContentInbox({
                       </p>
                       <p className="text-base font-bold text-ink-900">{username}</p>
                     </div>
-                    <button
-                      type="button"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-brand-100"
-                      aria-label={t("profile.editUsernameAria")}
-                      onClick={() => openProfileForm("username")}
-                    >
+                      <button
+                        type="button"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-[rgba(12,116,137,0.65)]"
+                        aria-label={t("profile.editUsernameAria")}
+                        onClick={() => openProfileForm("username")}
+                      >
                       <PencilSquareIcon className="h-5 w-5" />
                     </button>
                   </div>
@@ -554,12 +559,12 @@ export function ContentInbox({
                       </p>
                       <p className="text-base font-bold text-ink-900">********</p>
                     </div>
-                    <button
-                      type="button"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-brand-100"
-                      aria-label={t("profile.editPasswordAria")}
-                      onClick={() => openProfileForm("password")}
-                    >
+                      <button
+                        type="button"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-[rgba(12,116,137,0.65)]"
+                        aria-label={t("profile.editPasswordAria")}
+                        onClick={() => openProfileForm("password")}
+                      >
                       <PencilSquareIcon className="h-5 w-5" />
                     </button>
                   </div>
@@ -567,7 +572,7 @@ export function ContentInbox({
               </section>
 
               {activeProfileForm === "username" && (
-                <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
+                <section className="glass-card inbox-glass-text h-auto w-full max-w-full p-5 md:p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-xl font-extrabold tracking-tight text-ink-900">
                       {t("profile.changeUsernameTitle")}
@@ -611,14 +616,14 @@ export function ContentInbox({
               )}
 
               {activeProfileForm === "password" && (
-                <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
+                <section className="glass-card inbox-glass-text h-auto w-full max-w-full p-5 md:p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-xl font-extrabold tracking-tight text-ink-900">
                       {t("profile.changePasswordTitle")}
                     </h2>
                     <button
                       type="button"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-brand-200 text-ink-700 transition hover:bg-brand-100"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-brand-200 text-ink-700 transition hover:bg-[rgba(12,116,137,0.65)]"
                       aria-label={t("profile.hideChangePasswordAria")}
                       onClick={closeProfileForm}
                     >
@@ -677,7 +682,7 @@ export function ContentInbox({
                 onClick={openInboxComposer}
               >
                 <div className="grid place-items-center gap-1.5">
-                  <FrameIcon className="h-8 w-8 brightness-0 invert opacity-95" />
+                  <FrameIcon className="h-8 w-8 brightness-0 opacity-85" />
                   <p className="text-[18px] font-medium text-[#111827]" style={{ fontFamily: "Inter, sans-serif" }}>
                     {t("inbox.previewTitle")}
                   </p>
@@ -695,18 +700,28 @@ export function ContentInbox({
               searchValue={storageSearchValue}
               onSearchChange={setStorageSearchValue}
             />
+          ) : activeSection === "relationshipGraph" ? (
+            <section className="glass-card inbox-glass-text h-auto w-full max-w-full p-8 text-center md:p-10">
+              <div className="grid place-items-center gap-2.5">
+                <RelationshipGraphIcon className="h-8 w-8" />
+                <h2 className="text-center text-2xl font-extrabold tracking-tight text-[#111827]">
+                  {t(SECTION_TITLE_KEY_MAP[activeSection])}
+                </h2>
+                <p className="text-sm font-medium text-[#111827]">{t("section.inProgress")}</p>
+              </div>
+            </section>
           ) : (
-            <section className="rounded-card border border-brand-200 bg-white/95 p-8 text-center shadow-card md:p-10">
-              <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink-900">
+            <section className="glass-card inbox-glass-text h-auto w-full max-w-full p-8 text-center md:p-10">
+              <h2 className="text-center text-2xl font-extrabold tracking-tight text-[#111827]">
                 {t(SECTION_TITLE_KEY_MAP[activeSection])}
               </h2>
-              <p className="mt-3 text-sm font-medium text-ink-600">{t("section.inProgress")}</p>
+              <p className="mt-3 text-sm font-medium text-[#111827]">{t("section.inProgress")}</p>
             </section>
           )}
         </div>
       </main>
 
-      <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-200 bg-white/90 backdrop-blur-sm">
+      <footer className="absolute inset-x-0 bottom-0 z-30 border-t border-brand-200 bg-white/90 backdrop-blur-sm">
         <div className="flex h-16 w-full">
           <button
             type="button"
@@ -752,8 +767,12 @@ export function ContentInbox({
       </footer>
 
       <SuccessToast message={successToastMessage} visible={toastVisible} />
+        </section>
+        </div>
+      </div>
     </section>
   );
 }
+
 
 

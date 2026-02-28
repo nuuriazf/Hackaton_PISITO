@@ -48,6 +48,7 @@ export const EN_MESSAGES: Record<I18nKey, string> = {
   "section.storage": "Storage",
   "section.relationshipGraph": "Relationship Graph",
   "section.inProgress": "Section in progress",
+  "storage.pageTitle": "What do you want to find?",
   "storage.searchLabel": "Search entries",
   "storage.searchPlaceholder": "Search by title or text",
   "storage.loading": "Loading entries...",
@@ -138,3 +139,5 @@ export const EN_MESSAGES: Record<I18nKey, string> = {
   "resource.video": "Video",
   "resource.file": "File"
 };
+
+

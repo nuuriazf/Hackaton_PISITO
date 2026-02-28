@@ -48,6 +48,7 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "section.storage": "Almacenamento",
   "section.relationshipGraph": "Grafo de relacións",
   "section.inProgress": "Sección en preparación",
+  "storage.pageTitle": "Que queres atopar?",
   "storage.searchLabel": "Buscar entries",
   "storage.searchPlaceholder": "Busca por titulo ou texto",
   "storage.loading": "Cargando entries...",
@@ -138,3 +139,5 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "resource.video": "Video",
   "resource.file": "Arquivo"
 };
+
+

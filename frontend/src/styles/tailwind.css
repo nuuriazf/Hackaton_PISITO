@@ -81,7 +81,7 @@
   .glass-card {
     width: 240px;
     height: 360px;
-    background: rgba(255, 255, 255, 0.13);
+    background: rgba(170, 170, 170, 0.52);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
@@ -170,11 +170,30 @@
     );
   }
 
-  .inbox-glass-text :is(h1, h2, h3, h4, h5, h6, p, span, label, button, input, textarea) {
-    color: #f2f2f2 !important;
+  .glass-input {
+    background: rgba(255, 255, 255, 0.13) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 20px !important;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 0 6px 3px rgba(255, 255, 255, 0.3) !important;
+  }
+
+  .inbox-glass-text :is(h1, h2, h3, h4, h5, h6, p, span, label, button, input, textarea, svg, path) {
+    color: #111827 !important;
   }
 
   .inbox-glass-text ::placeholder {
-    color: rgb(242 242 242 / 0.75) !important;
+    color: rgb(17 24 39 / 0.55) !important;
+  }
+
+  .inbox-glass-text .profile-save-btn,
+  .inbox-glass-text .profile-save-btn:hover,
+  .inbox-glass-text .profile-save-btn:focus-visible {
+    color: #F2F2F2 !important;
   }
 }
