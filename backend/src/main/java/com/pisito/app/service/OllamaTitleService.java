@@ -60,7 +60,7 @@ public class OllamaTitleService {
         } catch (Exception ex) {
             throw new ResponseStatusException(
                 BAD_GATEWAY,
-                "No se pudo generar un titulo con Ollama",
+                "No se pudo generar el titulo con Ollama",
                 ex
             );
         }
@@ -71,7 +71,7 @@ public class OllamaTitleService {
 
         String generated = responseNode.path("response").asText("").trim();
         if (!StringUtils.hasText(generated)) {
-            return fallbackTitle(trimmedContent);
+            throw new ResponseStatusException(BAD_GATEWAY, "Ollama devolvio un titulo vacio");
         }
         return normalizeTitle(generated);
     }
@@ -102,13 +102,5 @@ public class OllamaTitleService {
             return sanitized.substring(0, FALLBACK_TITLE_LENGTH).trim();
         }
         return sanitized;
-    }
-
-    private String fallbackTitle(String content) {
-        String normalized = content.replace("\n", " ").trim();
-        if (normalized.length() <= FALLBACK_TITLE_LENGTH) {
-            return normalized;
-        }
-        return normalized.substring(0, FALLBACK_TITLE_LENGTH).trim();
     }
 }

@@ -19,6 +19,8 @@ Se recomienda configurar credenciales por variables de entorno:
 - `SUPABASE_DB_URL`
 - `SUPABASE_DB_USER`
 - `SUPABASE_DB_PASSWORD`
+- `SPOTIFY_CLIENT_ID` (opcional, para buscar canciones reales en Spotify API)
+- `SPOTIFY_CLIENT_SECRET` (opcional)
 
 Ejemplo para Supabase (Session Pooler):
 
@@ -30,6 +32,8 @@ mvn spring-boot:run
 ```
 
 No subas credenciales reales al repositorio. Si una password ya se expuso, rotala en Supabase.
+
+Si no configuras credenciales de Spotify, el backend igual guarda un link de busqueda en Spotify cuando detecta "cancion/canción" en el contenido de una nota.
 
 ## Endpoints principales
 

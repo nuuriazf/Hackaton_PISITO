@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { getEntries, createEntry, deleteEntry, deleteResource } from "./services/backendService";
+﻿import { useEffect, useState } from "react";
+import { createNote, deleteEntry, deleteResource, getEntries } from "./services/backendService";
 import type { Entry } from "./types/entry";
 import "./styles/app.css";
 
-const DEFAULT_USER_ID = 1; // Para demo
+const DEFAULT_USER_ID = 1;
 
 function App() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -11,7 +11,6 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // Form states
   const [title, setTitle] = useState("");
   const [textInputs, setTextInputs] = useState<string[]>([]);
   const [linkInputs, setLinkInputs] = useState<string[]>([]);
@@ -36,20 +35,35 @@ function App() {
 
   async function handleCreateEntry(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) {
-      setError("El título es requerido");
-      return;
+
+    const cleanTitle = title.trim();
+    const cleanTexts = textInputs.map((t) => t.trim()).filter(Boolean);
+    const cleanLinks = linkInputs.map((l) => l.trim()).filter(Boolean);
+    const cleanFiles = selectedFiles.map((f) => f.name).filter(Boolean);
+
+    const contentParts: string[] = [];
+    if (cleanTexts.length > 0) {
+      contentParts.push(cleanTexts.join("\n\n"));
     }
+    if (cleanLinks.length > 0) {
+      contentParts.push(`Links:\n${cleanLinks.join("\n")}`);
+    }
+    if (cleanFiles.length > 0) {
+      contentParts.push(`Archivos:\n${cleanFiles.join("\n")}`);
+    }
+    const noteContent = contentParts.join("\n\n").trim();
 
     try {
       setCreating(true);
       setError(null);
-      const newEntry = await createEntry({
-        title,
+      if (!noteContent) {
+        throw new Error("Agrega contenido antes de crear la nota.");
+      }
+
+      await createNote({
         userId: DEFAULT_USER_ID,
-        textResources: textInputs.filter(t => t.trim()),
-        linkResources: linkInputs.filter(l => l.trim()),
-        mediaFiles: selectedFiles
+        title: cleanTitle || undefined,
+        content: noteContent
       });
 
       setTitle("");
@@ -65,9 +79,10 @@ function App() {
   }
 
   async function handleDeleteEntry(id: number) {
-    if (!confirm("¿Estás seguro de que quieres eliminar esta entrada?")) {
+    if (!confirm("Estas seguro de que quieres eliminar esta entrada?")) {
       return;
     }
+
     try {
       await deleteEntry(id);
       await loadEntries();
@@ -77,9 +92,10 @@ function App() {
   }
 
   async function handleDeleteResource(entryId: number, resourceId: number) {
-    if (!confirm("¿Estás seguro de que quieres eliminar este recurso?")) {
+    if (!confirm("Estas seguro de que quieres eliminar este recurso?")) {
       return;
     }
+
     try {
       await deleteResource(entryId, resourceId);
       await loadEntries();
@@ -90,7 +106,7 @@ function App() {
 
   const addTextInput = () => setTextInputs([...textInputs, ""]);
   const addLinkInput = () => setLinkInputs([...linkInputs, ""]);
-  
+
   const updateTextInput = (index: number, value: string) => {
     const updated = [...textInputs];
     updated[index] = value;
@@ -119,16 +135,16 @@ function App() {
   return (
     <main className="container">
       <section className="card">
-        <h1>Crear Nueva Entrada</h1>
+        <h1>Crear nueva entrada</h1>
         <form onSubmit={handleCreateEntry} className="form">
           <div className="form-group">
-            <label htmlFor="title">Título:</label>
+            <label htmlFor="title">Titulo (opcional):</label>
             <input
               id="title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ej: Ideas de producto"
+              placeholder="Si queda vacio, Ollama genera el titulo"
               maxLength={120}
             />
           </div>
@@ -141,15 +157,11 @@ function App() {
                   type="text"
                   value={text}
                   onChange={(e) => updateTextInput(index, e.target.value)}
-                  placeholder="Escribe un texto..."
+                  placeholder="Escribe un texto"
                   maxLength={4000}
                 />
-                <button
-                  type="button"
-                  onClick={() => removeTextInput(index)}
-                  className="btn-remove"
-                >
-                  ✕
+                <button type="button" onClick={() => removeTextInput(index)} className="btn-remove">
+                  x
                 </button>
               </div>
             ))}
@@ -169,12 +181,8 @@ function App() {
                   placeholder="https://example.com"
                   maxLength={1000}
                 />
-                <button
-                  type="button"
-                  onClick={() => removeLinkInput(index)}
-                  className="btn-remove"
-                >
-                  ✕
+                <button type="button" onClick={() => removeLinkInput(index)} className="btn-remove">
+                  x
                 </button>
               </div>
             ))}
@@ -185,27 +193,22 @@ function App() {
 
           <div className="form-group">
             <label htmlFor="files">Archivos:</label>
-            <input
-              id="files"
-              type="file"
-              multiple
-              onChange={handleFileChange}
-            />
+            <input id="files" type="file" multiple onChange={handleFileChange} />
             {selectedFiles.length > 0 && (
               <div className="file-list">
                 {selectedFiles.map((file, index) => (
                   <div key={index} className="file-item">
-                    📄 {file.name}
+                    [file] {file.name}
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {error && <p className="error">❌ Error: {error}</p>}
+          {error && <p className="error">Error: {error}</p>}
 
-          <button type="submit" disabled={creating || !title.trim()}>
-            {creating ? "Creando..." : "Crear Entrada"}
+          <button type="submit" disabled={creating}>
+            {creating ? "Creando..." : "Crear entrada"}
           </button>
         </form>
       </section>
@@ -213,7 +216,7 @@ function App() {
       <section className="card">
         <h1>Entradas</h1>
         {loading && <p>Cargando...</p>}
-        {!loading && entries.length === 0 && <p>No hay entradas todavía.</p>}
+        {!loading && entries.length === 0 && <p>No hay entradas todavia.</p>}
 
         {!loading && entries.length > 0 && (
           <ul className="entries-list">
@@ -228,7 +231,7 @@ function App() {
                       className="btn-delete"
                       title="Eliminar entrada"
                     >
-                      🗑️
+                      borrar
                     </button>
                   </div>
                 </div>
@@ -249,7 +252,7 @@ function App() {
                             {resource.type === "LINK" && (
                               <div>
                                 <strong>Link:</strong>
-                                <a href={resource.url!} target="_blank" rel="noopener noreferrer">
+                                <a href={resource.url || "#"} target="_blank" rel="noopener noreferrer">
                                   {resource.url}
                                 </a>
                               </div>
@@ -266,7 +269,7 @@ function App() {
                             className="btn-delete-resource"
                             title="Eliminar recurso"
                           >
-                            ✕
+                            x
                           </button>
                         </li>
                       ))}
@@ -283,4 +286,3 @@ function App() {
 }
 
 export default App;
-

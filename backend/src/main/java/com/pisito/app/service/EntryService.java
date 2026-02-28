@@ -21,8 +21,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,15 +33,18 @@ public class EntryService {
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
     private final OllamaTitleService ollamaTitleService;
+    private final SpotifySongLinkService spotifySongLinkService;
 
     public EntryService(
         EntryRepository entryRepository,
         ResourceRepository resourceRepository,
-        OllamaTitleService ollamaTitleService
+        OllamaTitleService ollamaTitleService,
+        SpotifySongLinkService spotifySongLinkService
     ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
         this.ollamaTitleService = ollamaTitleService;
+        this.spotifySongLinkService = spotifySongLinkService;
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +71,59 @@ public class EntryService {
     }
 
     @Transactional
+    public EntryResponse createEntry(
+        String title,
+        Long userId,
+        List<String> textResources,
+        List<String> linkResources,
+        List<MultipartFile> mediaFiles
+    ) {
+        CreateEntryRequest request = new CreateEntryRequest();
+        request.setTitle(title);
+        request.setUserId(userId);
+        request.setResources(new ArrayList<>());
+
+        if (textResources != null) {
+            for (String text : textResources) {
+                if (!StringUtils.hasText(text)) {
+                    continue;
+                }
+                CreateEntryResourceRequest resource = new CreateEntryResourceRequest();
+                resource.setType(ResourceType.TEXT);
+                resource.setTextContent(text.trim());
+                request.getResources().add(resource);
+            }
+        }
+
+        if (linkResources != null) {
+            for (String url : linkResources) {
+                if (!StringUtils.hasText(url)) {
+                    continue;
+                }
+                CreateEntryResourceRequest resource = new CreateEntryResourceRequest();
+                resource.setType(ResourceType.LINK);
+                resource.setUrl(url.trim());
+                request.getResources().add(resource);
+            }
+        }
+
+        if (mediaFiles != null) {
+            for (MultipartFile file : mediaFiles) {
+                if (file == null || file.isEmpty()) {
+                    continue;
+                }
+                CreateEntryResourceRequest resource = new CreateEntryResourceRequest();
+                resource.setType(ResourceType.MEDIA);
+                String fileName = trimOrNull(file.getOriginalFilename());
+                resource.setStorageKey(fileName != null ? "upload://" + fileName : "upload://unnamed");
+                request.getResources().add(resource);
+            }
+        }
+
+        return createEntry(request);
+    }
+
+    @Transactional
     public EntryResponse createNote(CreateNoteRequest request) {
         String noteContent = trimRequired(request.getContent(), "content is required");
         String title = trimOrNull(request.getTitle());
@@ -79,6 +137,11 @@ public class EntryService {
         TextResource resource = new TextResource();
         resource.setText(noteContent);
         entry.addResource(resource);
+        spotifySongLinkService.findSongLinkForNote(noteContent).ifPresent(link -> {
+            LinkResource songLink = new LinkResource();
+            songLink.setUrl(link);
+            entry.addResource(songLink);
+        });
 
         return toEntryResponse(entryRepository.save(entry));
     }

@@ -19,9 +19,15 @@ export type Entry = {
 };
 
 export type CreateEntryInput = {
-  title: string;
+  title?: string;
   userId: number;
   textResources?: string[];
   linkResources?: string[];
   mediaFiles?: File[];
+};
+
+export type CreateNoteInput = {
+  title?: string;
+  content: string;
+  userId: number;
 };
