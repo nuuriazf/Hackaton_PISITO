@@ -1,18 +1,13 @@
-export type ResourceType = "TEXT" | "LINK" | "MEDIA";
+export type ResourceType = "RAW" | "LINK" | "MEDIA";
 export type EntryFlag =
-  | "TEXT"
-  | "PHOTO"
+  | "RAW"
   | "YOUTUBE"
   | "LINK"
   | "SPOTIFY"
-  | "TIKTOK"
   | "TWITCH"
-  | "FOOD"
-  | "SPORT"
-  | "TRAVEL"
-  | "WEATHER"
-  | "BOOK"
-  | "ALARM";
+  | "TABLE"
+  | "ENUMERATION"
+  | "CHECKLIST";
 
 export type ResourceItem = {
   id: number;

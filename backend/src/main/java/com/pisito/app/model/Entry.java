@@ -53,9 +53,6 @@ public class Entry {
     @OrderBy("createdAt DESC")
     private List<Resource> resources = new ArrayList<>();
 
-    @Column(name = "notification_date")
-    private Instant notificationDate;
-
     @PrePersist
     public void onCreate() {
         Instant now = Instant.now();
@@ -66,7 +63,7 @@ public class Entry {
             updateDate = now;
         }
         if (flag == null) {
-            flag = FlagEnum.TEXT;
+            flag = FlagEnum.RAW;
         }
     }
 
@@ -153,13 +150,5 @@ public class Entry {
 
     public void setResources(List<Resource> resources) {
         this.resources = resources;
-    }
-
-    public Instant getNotificationDate() {
-        return notificationDate;
-    }
-
-    public void setNotificationDate(Instant notificationDate) {
-        this.notificationDate = notificationDate;
     }
 }

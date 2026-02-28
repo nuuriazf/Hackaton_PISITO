@@ -21,8 +21,8 @@ public class OllamaService {
 
     public OllamaService(
         RestClient.Builder restClientBuilder,
-        @Value("http://localhost:11434") String baseUrl,
-        @Value("qwen2.5:7b") String model
+        @Value("${ollama.base-url:http://localhost:11434}") String baseUrl,
+        @Value("${ollama.model:llama3.1:8b}") String model
     ) {
         this.restClient = restClientBuilder.baseUrl(baseUrl).build();
         this.model = model;

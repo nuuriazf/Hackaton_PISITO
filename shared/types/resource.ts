@@ -1,4 +1,4 @@
-export type ResourceType = "TEXT" | "LINK" | "MEDIA";
+export type ResourceType = "RAW" | "LINK" | "MEDIA";
 
 export type ResourceItem = {
   id: number;

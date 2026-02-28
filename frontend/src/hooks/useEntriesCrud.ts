@@ -160,7 +160,7 @@ export function useEntriesCrud({ enabled, onUnauthorized }: UseEntriesCrudOption
         setSending(true);
         setError(null);
 
-        if (type === "TEXT") {
+        if (type === "RAW") {
           if (!textContent.trim()) {
             throw new Error(t("entries.textRequired"));
           }

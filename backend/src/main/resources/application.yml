@@ -35,8 +35,8 @@ ollama:
 spotify:
   api-base-url: https://api.spotify.com/v1
   auth-base-url: https://accounts.spotify.com
-  client-id: ${SPOTIFY_CLIENT_ID:}
-  client-secret: ${SPOTIFY_CLIENT_SECRET:}
+  client-id: ${SPOTIFY_CLIENT_ID:23f5df62147c459b9c6a47a9c6a33d6f}
+  client-secret: ${SPOTIFY_CLIENT_SECRET:e316d0caf66b4f1daee11da8654f3e3e}
 app:
   upload:
     dir: uploads

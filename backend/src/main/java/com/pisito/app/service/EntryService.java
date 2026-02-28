@@ -114,12 +114,17 @@ public class EntryService {
             entry.setNotificationDate(null);
         }
 
-        if (request.getFlag() == FlagEnum.SPOTIFY && StringUtils.hasText(firstTextContent)) {
-            spotifySongLinkService.findSongLinkForNote(firstTextContent).ifPresent(link -> {
+        String spotifyContext = allTextContent.toString().trim();
+        if (!StringUtils.hasText(spotifyContext)) {
+            spotifyContext = title;
+        }
+        if (request.getFlag() == FlagEnum.SPOTIFY && StringUtils.hasText(spotifyContext)) {
+            spotifySongLinkService.findSongLinkForSpotifyFlag(spotifyContext).ifPresent(link -> {
                 LinkResource songLink = new LinkResource();
-                songLink.setTitle("Cancion sugerida");
+                songLink.setTitle("Cancion principal en Spotify");
                 songLink.setUrl(link);
                 entry.addResource(songLink);
+                log.info("createEntry spotify link added for userId={} url={}", userId, link);
             });
         }
 

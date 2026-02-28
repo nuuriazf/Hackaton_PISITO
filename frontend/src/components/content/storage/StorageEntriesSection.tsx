@@ -26,7 +26,7 @@ function buildEntrySearchableText(entry: EntryItem) {
 
 function buildEntryText(entry: EntryItem, emptyText: string) {
   const textResources = entry.resources
-    .filter((resource) => resource.type === "TEXT")
+    .filter((resource) => resource.type === "RAW")
     .map((resource) => resource.textContent?.trim() ?? "")
     .filter(Boolean);
 
@@ -42,6 +42,16 @@ function buildEntryText(entry: EntryItem, emptyText: string) {
   }
 
   return emptyText;
+}
+
+function getEntryLinks(entry: EntryItem) {
+  return entry.resources
+    .filter((resource) => resource.type === "LINK" && Boolean(resource.url))
+    .map((resource) => ({
+      id: resource.id,
+      title: resource.title?.trim() || resource.url!,
+      url: resource.url!
+    }));
 }
 
 export function StorageEntriesSection({
@@ -69,6 +79,10 @@ export function StorageEntriesSection({
     }
     return entries.find((entry) => entry.id === selectedEntryId) ?? null;
   }, [entries, selectedEntryId]);
+  const selectedEntryLinks = useMemo(
+    () => (selectedEntry ? getEntryLinks(selectedEntry) : []),
+    [selectedEntry]
+  );
 
   useEffect(() => {
     if (selectedEntryId === null) {
@@ -212,6 +226,29 @@ export function StorageEntriesSection({
                       <PencilSquareIcon className="h-5 w-5" />
                     </button>
                   </article>
+
+                  {selectedEntryLinks.length > 0 && (
+                    <article className="rounded-control border border-brand-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        Spotify / Links
+                      </p>
+                      <div className="mt-2 grid gap-2">
+                        {selectedEntryLinks.map((link) => {
+                          return (
+                            <a
+                              key={link.id}
+                              href={link.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="break-all text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800"
+                            >
+                              {link.title}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </article>
+                  )}
                 </div>
               </section>
             </div>

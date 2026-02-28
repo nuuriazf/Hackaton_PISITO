@@ -301,12 +301,23 @@ export function ContentInbox({
       resetInboxFeedback();
       const activeFlag = resolveEntryFlag(inboxEntryForm);
 
-      await createEntry({
+      const createdEntry = await createEntry({
         title: title || undefined,
         resources,
         flag: activeFlag,
         notification: inboxEntryForm.alarmEnabled
       });
+      console.log("[createEntry] payload", {
+        title: title || undefined,
+        resources,
+        flag: activeFlag,
+        notification: inboxEntryForm.alarmEnabled
+      });
+      console.log("[createEntry] response", createdEntry);
+      console.log(
+        "[createEntry] link resources",
+        createdEntry.resources?.filter((resource) => resource.type === "LINK")
+      );
 
       setInboxEntryForm(INITIAL_INBOX_ENTRY_FORM);
       setInboxMessage(t("inbox.saved"));

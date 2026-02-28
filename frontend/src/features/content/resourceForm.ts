@@ -13,7 +13,7 @@ export type ResourceFormValues = {
 
 export const INITIAL_RESOURCE_FORM: ResourceFormValues = {
   selectedEntryId: "",
-  type: "TEXT",
+  type: "RAW",
   title: "",
   textContent: "",
   url: "",
