@@ -1,4 +1,18 @@
 export type ResourceType = "TEXT" | "LINK" | "MEDIA";
+export type EntryFlag =
+  | "TEXT"
+  | "PHOTO"
+  | "YOUTUBE"
+  | "LINK"
+  | "SPOTIFY"
+  | "TIKTOK"
+  | "TWITCH"
+  | "FOOD"
+  | "SPORT"
+  | "TRAVEL"
+  | "WEATHER"
+  | "BOOK"
+  | "ALARM";
 
 export type ResourceItem = {
   id: number;
@@ -31,8 +45,10 @@ export type CreateEntryResourceInput = {
 };
 
 export type CreateEntryInput = {
-  title: string;
+  title?: string;
   resources?: CreateEntryResourceInput[];
+  flag?: EntryFlag;
+  notification?: boolean;
 };
 
 export type CreateTextResourceInput = {

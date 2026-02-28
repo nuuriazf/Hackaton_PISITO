@@ -183,10 +183,8 @@ export function InboxEntryCreateForm({
           <label className={fieldLabelClass}>
             <span>{t("inbox.titleLabel")}</span>
             <textarea
-              minLength={1}
               maxLength={120}
               rows={1}
-              required
               disabled={submitting}
               placeholder={t("inbox.titlePlaceholder")}
               className={`${inputClass} scrollbar-brand min-h-[44px] max-h-[44px] resize-none overflow-x-hidden overflow-y-scroll`}

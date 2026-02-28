@@ -10,6 +10,7 @@ import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.resource.ResourceResponse;
 import com.pisito.app.model.AppUser;
 import com.pisito.app.model.Entry;
+import com.pisito.app.model.FlagEnum;
 import com.pisito.app.model.LinkResource;
 import com.pisito.app.model.MediaResource;
 import com.pisito.app.model.Resource;
@@ -30,21 +31,24 @@ public class EntryService {
 
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
+    private final OllamaTitleService ollamaTitleService;
     private final UserRepository userRepository;
 
     public EntryService(
         EntryRepository entryRepository,
         ResourceRepository resourceRepository,
+        OllamaTitleService ollamaTitleService,
         UserRepository userRepository
     ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
+        this.ollamaTitleService = ollamaTitleService;
         this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
     public List<EntryResponse> findAll(Long userId) {
-        return entryRepository.findAllByOwnerIdOrderByCreatedAtDesc(userId).stream()
+        return entryRepository.findAllByUserIdOrderByCreateDateDesc(userId).stream()
             .map(this::toEntryResponse)
             .toList();
     }
@@ -56,15 +60,51 @@ public class EntryService {
 
     @Transactional
     public EntryResponse createEntry(Long userId, CreateEntryRequest request) {
-        AppUser owner = getUserOrThrow(userId);
+        AppUser user = getUserOrThrow(userId);
 
         Entry entry = new Entry();
-        entry.setOwner(owner);
-        entry.setTitle(trimRequired(request.getTitle(), "title is required"));
+        entry.setUser(user);
+        entry.setFlag(request.getFlag() != null ? request.getFlag() : FlagEnum.TEXT);
 
+        String firstTextContent = null;
+        StringBuilder allTextContent = new StringBuilder();
         for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
-            entry.addResource(buildResource(resourceRequest));
+            Resource resource = buildResource(resourceRequest);
+            entry.addResource(resource);
+            if (firstTextContent == null
+                && resource instanceof TextResource textResource
+                && StringUtils.hasText(textResource.getTextContent())) {
+                firstTextContent = textResource.getTextContent().trim();
+            }
+            if (resource instanceof TextResource textResource
+                && StringUtils.hasText(textResource.getTextContent())) {
+                if (!allTextContent.isEmpty()) {
+                    allTextContent.append('\n');
+                }
+                allTextContent.append(textResource.getTextContent().trim());
+            }
         }
+
+        String title = trimOrNull(request.getTitle());
+        if (!StringUtils.hasText(title) && StringUtils.hasText(firstTextContent)) {
+            try {
+                title = ollamaTitleService.generateTitle(firstTextContent);
+            } catch (ResponseStatusException ignored) {
+                title = firstTextContent.length() > 120 ? firstTextContent.substring(0, 120).trim() : firstTextContent;
+            }
+        }
+        if (!StringUtils.hasText(title)) {
+            title = "Nueva entrada";
+        }
+        entry.setTitle(trimRequired(title, "title is required"));
+
+        if (entry.getFlag() == FlagEnum.ALARM) {
+            String notificationContext = allTextContent.isEmpty() ? title : allTextContent.toString();
+            entry.setNotificationDate(ollamaTitleService.extractNotificationDate(notificationContext).orElse(null));
+        } else {
+            entry.setNotificationDate(null);
+        }
+
         return toEntryResponse(entryRepository.save(entry));
     }
 
@@ -105,7 +145,7 @@ public class EntryService {
     @Transactional
     public void deleteResource(Long userId, Long entryId, Long resourceId) {
         Resource resource = getResourceOrThrow(resourceId);
-        if (!resource.getEntry().getId().equals(entryId) || !resource.getEntry().getOwner().getId().equals(userId)) {
+        if (!resource.getEntry().getId().equals(entryId) || !resource.getEntry().getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
         Entry entry = resource.getEntry();
@@ -158,7 +198,7 @@ public class EntryService {
     }
 
     private Entry getEntryOrThrow(Long userId, Long entryId) {
-        return entryRepository.findByIdAndOwnerId(entryId, userId)
+        return entryRepository.findByIdAndUserId(entryId, userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
     }
 
@@ -181,8 +221,8 @@ public class EntryService {
             entry.getId(),
             entry.getTitle(),
             resources,
-            entry.getCreatedAt(),
-            entry.getUpdatedAt()
+            entry.getCreateDate(),
+            entry.getUpdateDate()
         );
     }
 

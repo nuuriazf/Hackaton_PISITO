@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface EntryRepository extends JpaRepository<Entry, Long> {
 
-    List<Entry> findAllByOwnerIdOrderByCreatedAtDesc(Long ownerId);
+    List<Entry> findAllByUserIdOrderByCreateDateDesc(Long userId);
 
-    Optional<Entry> findByIdAndOwnerId(Long id, Long ownerId);
+    Optional<Entry> findByIdAndUserId(Long id, Long userId);
 }

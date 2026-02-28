@@ -13,7 +13,8 @@ export function fetchEntries() {
 }
 
 export function createEntry(input: string | CreateEntryInput) {
-  const payload = typeof input === "string" ? { title: input } : input;
+  const payload =
+    typeof input === "string" ? { title: input, flag: "TEXT" as const } : { flag: "TEXT" as const, ...input };
   return api<EntryItem>("/entries", {
     method: "POST",
     body: JSON.stringify(payload)

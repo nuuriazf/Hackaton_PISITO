@@ -6,7 +6,7 @@ import { validatePassword, validateUsername } from "../../features/auth/formVali
 import { useI18n } from "../../i18n/I18nProvider";
 import type { AppLanguage, I18nKey } from "../../i18n/messages";
 import type { UpdatePasswordInput, UpdateUsernameInput } from "../../types/auth";
-import type { CreateEntryResourceInput } from "../../types/resource";
+import type { CreateEntryResourceInput, EntryFlag } from "../../types/resource";
 import { readErrorMessage } from "../../utils/error";
 import {
   Cog6ToothIcon,
@@ -84,6 +84,22 @@ function buildMediaStorageKey(fileName: string) {
       .replace(/^-|-$/g, "") || "archivo";
 
   return `uploads/${Date.now()}-${safeName}`;
+}
+
+function resolveEntryFlag(form: InboxEntryFormValues): EntryFlag {
+  if (form.photoEnabled) return "PHOTO";
+  if (form.youtubeEnabled) return "YOUTUBE";
+  if (form.linkEnabled) return "LINK";
+  if (form.musicEnabled) return "SPOTIFY";
+  if (form.tiktokEnabled) return "TIKTOK";
+  if (form.twitchEnabled) return "TWITCH";
+  if (form.foodEnabled) return "FOOD";
+  if (form.sportEnabled) return "SPORT";
+  if (form.travelEnabled) return "TRAVEL";
+  if (form.weatherEnabled) return "WEATHER";
+  if (form.bookEnabled) return "BOOK";
+  if (form.alarmEnabled) return "ALARM";
+  return "TEXT";
 }
 
 const SECTION_PATH_MAP: Record<InboxSection, string> = {
@@ -233,10 +249,6 @@ export function ContentInbox({
 
   async function handleCreateInboxEntry() {
     const title = inboxEntryForm.title.trim();
-    if (!title) {
-      setInboxError(t("inbox.titleRequired"));
-      return;
-    }
 
     const resources: CreateEntryResourceInput[] = [];
     const textContent = inboxEntryForm.textContent.trim();
@@ -263,8 +275,10 @@ export function ContentInbox({
       resetInboxFeedback();
 
       await createEntry({
-        title,
-        resources
+        title: title || undefined,
+        resources,
+        flag: resolveEntryFlag(inboxEntryForm),
+        notification: true
       });
 
       setInboxEntryForm(INITIAL_INBOX_ENTRY_FORM);

@@ -3,29 +3,34 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   datasource:
-    # Local default (H2). For Supabase/Postgres set DB_URL/DB_USERNAME/DB_PASSWORD env vars.
-    url: ${DB_URL:jdbc:h2:mem:pisitodb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    driver-class-name: ${DB_DRIVER_CLASS:org.h2.Driver}
-    username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:}
+    url: jdbc:postgresql://localhost:5432/pisito_db
+    driver-class-name: org.postgresql.Driver
+    username: pisito_user
+    password: pisito_password
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
-    show-sql: ${JPA_SHOW_SQL:true}
-    defer-datasource-initialization: ${JPA_DEFER_DATASOURCE_INITIALIZATION:true}
+      ddl-auto: update
+    show-sql: true
+    defer-datasource-initialization: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   sql:
     init:
-      # Use NEVER with Supabase to avoid running local seed file data.sql there.
-      mode: ${SQL_INIT_MODE:always}
+      mode: never
   h2:
     console:
-      enabled: ${H2_CONSOLE_ENABLED:true}
+      enabled: false
       path: /h2-console
 
 server:
   port: 8080
   error:
     include-message: always
+
+ollama:
+  base-url: http://localhost:11434
+  model: qwen2.5:7b
 
 app:
   jwt:
