@@ -7,6 +7,7 @@ import type { AuthCredentials } from "../../types/auth";
 import { Button, buttonClass } from "../ui/Button";
 import { ArrowLongLeftIcon } from "../ui/icons";
 import { errorTextClass, fieldLabelClass, inputClass, pageTitleClass } from "../ui/styles";
+import "../../styles/tailwind.css";
 
 type RegisterFormProps = {
   submitting: boolean;
@@ -63,7 +64,7 @@ export function RegisterForm({ submitting, error, onSubmit }: RegisterFormProps)
   }
 
   return (
-    <section className="flex min-h-[520px] w-full max-w-[500px] flex-col rounded-card border border-brand-200 bg-brand-50 p-5 shadow-card sm:min-h-[560px] sm:p-6 md:min-h-[620px] md:p-8">
+    <section className="glass-card flex min-h-[520px] w-full max-w-[60%] flex-col p-5 shadow-card sm:min-h-[560px] sm:p-6 md:min-h-[620px] md:p-8 font-['Inter']">
       <form className="flex h-full flex-1 flex-col" onSubmit={handleSubmit}>
         <div className="flex justify-start">
           <Link
@@ -72,7 +73,7 @@ export function RegisterForm({ submitting, error, onSubmit }: RegisterFormProps)
             className={buttonClass({
               variant: "ghost",
               fullWidth: false,
-              className: "px-2.5 py-2 text-brand-200 hover:text-brand-200"
+              className: "px-2.5 py-2 text-brand-200 hover:text-brand-200 font-['Inter']"
             })}
           >
             <ArrowLongLeftIcon className="h-6 w-6" />
@@ -81,15 +82,15 @@ export function RegisterForm({ submitting, error, onSubmit }: RegisterFormProps)
 
         <header className="mt-5 text-center sm:mt-6">
           <h1
-            className={`${pageTitleClass} text-[2rem] font-extrabold leading-[1.07] tracking-[-0.03em] sm:text-[2.4rem]`}
+            className={`${pageTitleClass} text-[2rem] font-extrabold leading-[1.07] tracking-[-0.03em] sm:text-[2.4rem] font-['Inter']`}
           >
             {t("register.title")}
           </h1>
-          <p className="text-base leading-relaxed text-ink-600 sm:text-[1.05rem]">{t("register.subtitle")}</p>
+          <p className="text-base leading-relaxed text-ink-600 sm:text-[1.05rem] font-['Inter']">{t("register.subtitle")}</p>
         </header>
 
         <div className="mt-5 grid gap-4 sm:mt-6">
-          <label className={`${fieldLabelClass} ${usernameError ? "text-rose-700" : ""}`}>
+          <label className={`${fieldLabelClass} ${usernameError ? "text-rose-700" : ""} font-['Inter']`}>
             <span>{t("auth.usernameLabel")}</span>
             <input
               type="text"
@@ -97,16 +98,16 @@ export function RegisterForm({ submitting, error, onSubmit }: RegisterFormProps)
               maxLength={40}
               autoComplete="username"
               placeholder={t("auth.usernamePlaceholder")}
-              className={`${inputClass} ${usernameError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
+              className={`${inputClass} ${usernameError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""} font-['Inter']`}
               aria-invalid={Boolean(usernameError)}
               value={username}
               disabled={submitting}
               onChange={(event) => setUsername(event.target.value)}
             />
-            {usernameErrorText && <p className="text-sm font-medium text-rose-700">{t(usernameErrorText)}</p>}
+            {usernameErrorText && <p className="text-sm font-medium text-rose-700 font-['Inter']">{t(usernameErrorText)}</p>}
           </label>
 
-          <label className={`${fieldLabelClass} ${passwordError ? "text-rose-700" : ""}`}>
+          <label className={`${fieldLabelClass} ${passwordError ? "text-rose-700" : ""} font-['Inter']`}>
             <span>{t("auth.passwordLabel")}</span>
             <input
               type="password"
@@ -114,16 +115,16 @@ export function RegisterForm({ submitting, error, onSubmit }: RegisterFormProps)
               maxLength={72}
               autoComplete="new-password"
               placeholder={t("auth.passwordPlaceholder")}
-              className={`${inputClass} ${passwordError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
+              className={`${inputClass} ${passwordError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""} font-['Inter']`}
               aria-invalid={Boolean(passwordError)}
               value={password}
               disabled={submitting}
               onChange={(event) => setPassword(event.target.value)}
             />
-            {passwordErrorText && <p className="text-sm font-medium text-rose-700">{t(passwordErrorText)}</p>}
+            {passwordErrorText && <p className="text-sm font-medium text-rose-700 font-['Inter']">{t(passwordErrorText)}</p>}
           </label>
 
-          <label className={`${fieldLabelClass} ${confirmPasswordError ? "text-rose-700" : ""}`}>
+          <label className={`${fieldLabelClass} ${confirmPasswordError ? "text-rose-700" : ""} font-['Inter']`}>
             <span>{t("auth.confirmPasswordLabel")}</span>
             <input
               type="password"
@@ -131,21 +132,21 @@ export function RegisterForm({ submitting, error, onSubmit }: RegisterFormProps)
               maxLength={72}
               autoComplete="new-password"
               placeholder={t("auth.passwordPlaceholder")}
-              className={`${inputClass} ${confirmPasswordError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""}`}
+              className={`${inputClass} ${confirmPasswordError ? "border-rose-500 focus:border-rose-600 focus:ring-rose-100" : ""} font-['Inter']`}
               aria-invalid={Boolean(confirmPasswordError)}
               value={confirmPassword}
               disabled={submitting}
               onChange={(event) => setConfirmPassword(event.target.value)}
             />
             {confirmPasswordErrorText && (
-              <p className="text-sm font-medium text-rose-700">{t(confirmPasswordErrorText)}</p>
+              <p className="text-sm font-medium text-rose-700 font-['Inter']">{t(confirmPasswordErrorText)}</p>
             )}
           </label>
 
-          {error && <p className={errorTextClass}>{t("common.errorPrefix", { message: error })}</p>}
+          {error && <p className={`${errorTextClass} font-['Inter']`}>{t("common.errorPrefix", { message: error })}</p>}
         </div>
 
-        <Button type="submit" variant="secondary" size="lg" className="mt-auto" disabled={submitting}>
+        <Button type="submit" variant="secondary" size="lg" className="mt-auto font-['Inter']" disabled={submitting}>
           {submitting ? t("register.submitting") : t("common.accept")}
         </Button>
       </form>

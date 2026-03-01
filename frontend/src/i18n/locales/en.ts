@@ -47,6 +47,7 @@ export const EN_MESSAGES: Record<I18nKey, string> = {
   "footer.profile": "Profile",
   "section.explore": "Explore",
   "section.storage": "Library",
+  "section.inbox": "What do you want to remember?",
   "section.relationshipGraph": "Relationship Graph",
   "section.inProgress": "Section in progress",
   "storage.searchLabel": "Search entries",

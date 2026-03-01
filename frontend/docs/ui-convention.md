@@ -7,9 +7,9 @@
 - `brand-200` `#7AC3FF`
 - `brand-300` `#5CB6FF`
 - `brand-400` `#2EA1FF`
-- `brand-500` `#008CFF`
+- `brand-500` `#13505B`
 - `brand-600` `#0073D1`
-- `brand-700` `#005AA3`
+- `brand-700` `#13505B`
 - `brand-800` `#004175`
 - `brand-900` `#002747`
 - `brand-950` `#000E1A`

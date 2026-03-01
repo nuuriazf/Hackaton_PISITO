@@ -7,7 +7,7 @@
   ];
 
   const HOTKEYS = [
-    { ctrlKey: true, shiftKey: true, altKey: false, key: "Y" },
+    { ctrlKey: true, shiftKey: true, altKey: false, key: "V" },
     { ctrlKey: false, shiftKey: true, altKey: true, key: "P" }
   ];
 
@@ -68,7 +68,7 @@
     const header = document.createElement("header");
     header.className = "pisito-header";
     header.innerHTML = `
-      <p class="pisito-title">PISITO Inbox</p>
+      <p class="pisito-title">Funil</p>
       <div class="pisito-actions">
         <button type="button" class="pisito-btn" id="pisito-tab-btn">Abrir en pestaña</button>
         <button type="button" class="pisito-btn pisito-close" id="pisito-close-btn">×</button>

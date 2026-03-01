@@ -47,6 +47,7 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "footer.profile": "Perfil",
   "section.explore": "Explorar",
   "section.storage": "Biblioteca",
+  "section.inbox": "Que queres lembrar?",
   "section.relationshipGraph": "Grafo de relacións",
   "section.inProgress": "Sección en preparación",
   "storage.searchLabel": "Buscar entries",

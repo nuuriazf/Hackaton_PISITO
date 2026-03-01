@@ -10,6 +10,8 @@ import { useI18n } from "./i18n/I18nProvider";
 import type { AuthCredentials } from "./types/auth";
 import { ContentExtensionWidget } from "./components/content/ContentExtensionWidget";
 
+const fondoCentroBackgroundUrl = new URL("./assets/fondocentro.jpg", import.meta.url).href;
+
 function App() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -17,7 +19,7 @@ function App() {
 
   const withAuthCardLayout = useCallback(
     (content: ReactNode) => (
-      <section className={appShellClass}>
+      <section className={appShellClass} style={{ backgroundImage: `url(${fondoCentroBackgroundUrl})` }}>
         <section className={appCenterClass}>{content}</section>
       </section>
     ),
@@ -160,21 +162,7 @@ function App() {
         />
         <Route
           path="/storage"
-          element={
-            auth.authUser ? (
-              <ContentInbox
-                username={auth.authUser.username}
-                submitting={auth.authSubmitting}
-                error={auth.authError}
-                onUpdateUsername={auth.updateUsernameUser}
-                onUpdatePassword={auth.updatePasswordUser}
-                onClearError={auth.clearAuthError}
-                onLogout={auth.logout}
-              />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
+          element={<Navigate to="/library" replace />}
         />
 
         <Route
@@ -221,7 +209,6 @@ function App() {
             auth.authUser ? (
               <ContentExtensionWidget onLogout={auth.logout} />
             ) : (
-              // Si no está logueado, le mostramos el login normal
               <Navigate to="/" replace /> 
             )
           }

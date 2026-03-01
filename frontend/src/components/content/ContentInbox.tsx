@@ -476,7 +476,7 @@ export function ContentInbox({
       style={{ backgroundImage: `url(${fondoCentroBackgroundUrl})` }}
     >
       <section className="relative h-full w-full overflow-hidden bg-transparent">
-        <header className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-brand-200 bg-white/25 px-4 backdrop-blur-sm sm:px-6">
+        <header className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-[#F0F0F0] bg-white/25 px-4 backdrop-blur-sm sm:px-6">
           <button
             type="button"
             className="inline-flex items-center justify-center"
@@ -492,7 +492,7 @@ export function ContentInbox({
             />
           </button>
 
-          <nav className="mx-auto flex w-3/4 items-center justify-center gap-3">
+          <nav className="mx-auto hidden w-3/4 items-center justify-center gap-3 md:flex">
             <button
               type="button"
               className={`inline-flex h-10 w-24 shrink-0 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
@@ -506,48 +506,6 @@ export function ContentInbox({
               <MagnifyingGlassIcon className="h-6 w-6" />
             </button>
             <div className="h-8 w-px shrink-0 bg-gray-700" />
-            <div className="relative">
-            {notificationsOpen && (
-              <section
-                className="absolute right-0 top-[calc(100%+10px)] z-40 w-[320px] max-w-[calc(100vw-2rem)] rounded-card border border-brand-200 bg-white/95 p-3 shadow-card backdrop-blur-sm"
-                role="menu"
-                aria-label={t("notifications.menuAria")}
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">{t("notifications.ariaButton")}</p>
-
-                <div className="scrollbar-brand mt-2 max-h-80 overflow-y-auto pr-1">
-                  {storageLoading ? (
-                    <p className="text-sm text-ink-600">{t("storage.loading")}</p>
-                  ) : notificationEntries.length === 0 ? (
-                    <p className="text-sm text-ink-600">{t("notifications.empty")}</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {notificationEntries.map((entry) => (
-                        <li key={`notif-${entry.id}`}>
-                          <button
-                            type="button"
-                            className="w-full rounded-control border border-brand-200 bg-white px-2.5 py-2 text-left transition hover:bg-brand-50"
-                            onClick={() => {
-                              setEntryToOpenFromNotifications(entry.id);
-                              setNotificationsOpen(false);
-                              changeSection("storage");
-                            }}
-                          >
-                            <p className="truncate text-sm font-semibold text-ink-900">{entry.title}</p>
-                            <p className="mt-0.5 text-xs text-ink-600">
-                              {entry.notificationDate
-                                ? notificationDateFormatter.format(new Date(entry.notificationDate))
-                                : ""}
-                            </p>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </section>
-            )}
-            </div>
             <button
               type="button"
               className={`inline-flex h-10 w-24 shrink-0 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
@@ -605,7 +563,7 @@ export function ContentInbox({
             <div className="relative">
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white/25 text-brand-700 transition hover:bg-[rgba(17,157,164,0.65)]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-[#F0F0F0] bg-white/25 text-[#13505B] transition hover:bg-[#13505B] hover:text-[#F0F0F0]"
                 aria-label={t("notifications.ariaButton")}
                 aria-haspopup="menu"
                 aria-expanded={notificationsOpen}
@@ -619,17 +577,51 @@ export function ContentInbox({
 
               {notificationsOpen && (
                 <section
-                  className="absolute right-0 top-[calc(100%+10px)] z-40 h-28 w-56 rounded-card border border-brand-200 bg-white/25 p-3 shadow-card backdrop-blur-sm"
+                  className="absolute top-[calc(100%+10px)] z-40 w-[320px] max-w-[calc(100vw-2rem)] rounded-card border border-[#F0F0F0] bg-white/95 p-3 shadow-card backdrop-blur-sm"
+                  style={{ right: 0 }}
                   role="menu"
                   aria-label={t("notifications.menuAria")}
-                />
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">{t("notifications.ariaButton")}</p>
+
+                  <div className="scrollbar-brand mt-2 max-h-80 overflow-y-auto pr-1">
+                    {storageLoading ? (
+                      <p className="text-sm text-ink-600">{t("storage.loading")}</p>
+                    ) : notificationEntries.length === 0 ? (
+                      <p className="text-sm text-ink-600">{t("notifications.empty")}</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {notificationEntries.map((entry) => (
+                          <li key={`notif-${entry.id}`}>
+                            <button
+                              type="button"
+                              className="w-full rounded-control border border-[#F0F0F0] bg-white px-2.5 py-2 text-left transition hover:bg-brand-50"
+                              onClick={() => {
+                                setEntryToOpenFromNotifications(entry.id);
+                                setNotificationsOpen(false);
+                                changeSection("storage");
+                              }}
+                            >
+                              <p className="truncate text-sm font-semibold text-ink-900">{entry.title}</p>
+                              <p className="mt-0.5 text-xs text-ink-600">
+                                {entry.notificationDate
+                                  ? notificationDateFormatter.format(new Date(entry.notificationDate))
+                                  : ""}
+                              </p>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </section>
               )}
             </div>
 
             <div className="relative">
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white/25 text-brand-700 transition hover:bg-[rgba(17,157,164,0.65)]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-[#F0F0F0] bg-white/25 text-[#13505B] transition hover:bg-[#13505B] hover:text-[#F0F0F0]"
                 aria-label={t("settings.ariaButton")}
                 aria-haspopup="menu"
                 aria-expanded={settingsOpen}
@@ -643,7 +635,7 @@ export function ContentInbox({
 
               {settingsOpen && (
                 <section
-                  className="absolute right-0 top-[calc(100%+10px)] z-40 w-56 rounded-card border border-brand-200 bg-white/25 p-3 shadow-card backdrop-blur-sm"
+                  className="absolute right-0 top-[calc(100%+10px)] z-40 w-56 max-w-[calc(100vw-3rem)] rounded-card border border-[#F0F0F0] bg-white/95 p-3 shadow-card backdrop-blur-sm"
                   role="menu"
                   aria-label={t("settings.menuAria")}
                 >
@@ -663,7 +655,7 @@ export function ContentInbox({
                             className={`flex items-center justify-between rounded-control border px-2.5 py-2 text-sm font-semibold transition ${
                               selected
                                 ? "border-brand-400 bg-brand-100 text-brand-800"
-                                : "border-brand-200 bg-white/25 text-ink-700 hover:bg-brand-50"
+                                : "border-[#F0F0F0] bg-white/25 text-ink-700 hover:bg-brand-50"
                             }`}
                             role="menuitemradio"
                             aria-checked={selected}
@@ -699,7 +691,7 @@ export function ContentInbox({
                   </div>
 
                   <div className="grid gap-3">
-                    <div className="flex items-center justify-between rounded-control border border-brand-200 bg-white/25 p-3">
+                    <div className="flex items-center justify-between rounded-control border border-[#F0F0F0] bg-white/25 p-3">
                       <div className="grid gap-0.5">
                         <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
                           {t("profile.username")}
@@ -708,7 +700,7 @@ export function ContentInbox({
                       </div>
                       <button
                         type="button"
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-[rgba(12,116,137,0.65)]"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-[#F0F0F0] text-brand-700 transition hover:bg-[#13505B] hover:text-[#F0F0F0]"
                         aria-label={t("profile.editUsernameAria")}
                         onClick={() => openProfileForm("username")}
                       >
@@ -716,7 +708,7 @@ export function ContentInbox({
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-control border border-brand-200 bg-white/25 p-3">
+                    <div className="flex items-center justify-between rounded-control border border-[#F0F0F0] bg-white/25 p-3">
                       <div className="grid gap-0.5">
                         <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
                           {t("profile.password")}
@@ -725,7 +717,7 @@ export function ContentInbox({
                       </div>
                       <button
                         type="button"
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-[rgba(12,116,137,0.65)]"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-[#F0F0F0] text-brand-700 transition hover:bg-[#13505B] hover:text-[#F0F0F0]"
                         aria-label={t("profile.editPasswordAria")}
                         onClick={() => openProfileForm("password")}
                       >

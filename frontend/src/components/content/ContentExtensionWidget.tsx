@@ -27,7 +27,6 @@ function resolveEntryFlag(form: InboxEntryFormValues): EntryFlag {
     case "table": return "TABLE";
     case "enumeration": return "ENUMERATION";
     case "checklist": return "CHECKLIST";
-    case "survey":
     default: return "RAW";
   }
 }
@@ -133,7 +132,7 @@ export function ContentExtensionWidget({ onLogout }: ContentExtensionWidgetProps
           values={inboxEntryForm}
           submitting={inboxSubmitting}
           error={inboxError}
-          heading="PISITO Inbox" 
+          heading="Funil" 
           onSubmit={handleCreateInboxEntry}
           onChange={patchInboxEntryForm}
         />

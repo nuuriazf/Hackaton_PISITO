@@ -205,7 +205,7 @@ function renderTodoListMarkdown(markdown: string): ReactNode {
       const checked = line.startsWith("- [x] ") || line.startsWith("- [X] ");
       const content = line.slice(6).trim();
       return (
-        <div key={`task-${index}`} className="flex items-start gap-2 rounded-control border border-brand-200 bg-brand-50 px-2.5 py-1.5">
+        <div key={`task-${index}`} className="flex items-start gap-2 rounded-control border border-[#F0F0F0] bg-brand-50 px-2.5 py-1.5">
           <span
             className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
               checked ? "border-brand-500 bg-brand-500 text-white" : "border-brand-300 bg-white/25 text-transparent"
@@ -1018,7 +1018,7 @@ export function StorageEntriesSection({
       "inline-flex h-10 w-10 items-center justify-center rounded-control border transition",
       active
         ? "border-brand-500 bg-brand-500 text-white shadow-sm"
-        : "border-brand-200 bg-white/25 text-brand-700 hover:bg-brand-50"
+        : "border-[#F0F0F0] bg-white/25 text-brand-700 hover:bg-brand-50"
     ].join(" ");
   }
 
@@ -1423,7 +1423,7 @@ export function StorageEntriesSection({
           <div className="mt-1 flex justify-end">
             <button
               type="button"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-control border border-brand-200 bg-white/25 px-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-control border border-[#F0F0F0] bg-white/25 px-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
               aria-label={t("storage.createFolderAria")}
               onClick={openCreateFolderModal}
               disabled={creatingFolder}
@@ -1434,17 +1434,17 @@ export function StorageEntriesSection({
           </div>
 
           {foldersError ? (
-            <section className="rounded-card border border-brand-200 bg-white/25 p-4 shadow-card md:p-5">
+            <section className="rounded-card border border-brand-200 bg-white/25 p-4 shadow-card md:p-5 mt-5">
               <p className="text-sm font-medium text-ink-600">{foldersError}</p>
             </section>
           ) : null}
 
           {foldersLoading ? (
-            <section className="rounded-card border border-brand-200 bg-white/25 p-4 shadow-card md:p-5">
+            <section className="rounded-card border border-brand-200 bg-white/25 p-4 shadow-card md:p-5 mt-5">
               <p className="text-sm font-medium text-ink-600">{t("storage.loading")}</p>
             </section>
           ) : filteredFolders.length === 0 ? (
-            <section className="rounded-card border border-brand-200 bg-white/25 p-4 shadow-card md:p-5">
+            <section className="rounded-card border border-brand-200 bg-white/25 p-4 shadow-card md:p-5 mt-5">
               <p className="text-sm font-medium text-ink-600">{t("storage.noFolders")}</p>
             </section>
           ) : (
@@ -1456,12 +1456,12 @@ export function StorageEntriesSection({
                 <button
                   key={`folder-${folder.id}`}
                   type="button"
-                  className="col-span-1 grid min-w-0 gap-3 rounded-card border border-brand-200 bg-white/25 p-4 text-left shadow-card transition hover:bg-brand-50"
+                  className="col-span-1 grid min-w-0 gap-3 rounded-card border border-[#F0F0F0] bg-white/25 p-4 text-left shadow-card transition hover:bg-brand-50"
                   onClick={() => openFolder(folder)}
                   aria-label={folder.title}
                 >
                   <h3 className="break-words text-base font-semibold leading-snug text-ink-900">{folder.title}</h3>
-                  <div className="flex min-h-20 items-center justify-center rounded-control border border-brand-200 bg-brand-50">
+                  <div className="flex min-h-20 items-center justify-center rounded-control border border-[#F0F0F0] bg-brand-50">
                     <StorageIcon className="h-9 w-9 text-brand-600" />
                   </div>
                 </button>
@@ -1512,7 +1512,7 @@ export function StorageEntriesSection({
                   className={`relative mb-3 inline-block w-full break-inside-avoid rounded-card border bg-white/25 p-4 text-left shadow-card transition ${
                     selected
                       ? "border-brand-500 ring-2 ring-brand-100"
-                      : "border-brand-200 hover:bg-brand-50"
+                      : "border-[#F0F0F0] hover:bg-brand-50"
                   }`}
                   onClick={() => {
                     setForcedLeftEntryId(null);
@@ -1550,7 +1550,7 @@ export function StorageEntriesSection({
                   {isYoutubeCard ? (
                     <div className={youtubeVideo!.isShort ? "mt-2 flex justify-center" : "mt-2"}>
                       <div
-                        className={`overflow-hidden rounded-control border border-brand-200 bg-brand-50 ${
+                        className={`overflow-hidden rounded-control border border-[#F0F0F0] bg-brand-50 ${
                           youtubeVideo!.isShort ? "w-full max-w-[220px]" : "w-full"
                         }`}
                         style={youtubeVideo!.isShort ? { aspectRatio: "9 / 16" } : undefined}
@@ -1628,7 +1628,7 @@ export function StorageEntriesSection({
                   type="button"
                   className={`hidden w-[220px] shrink-0 rounded-card border bg-white p-3 text-left shadow-card transform-gpu transition-all duration-300 ease-out lg:block ${leftCardScaleClass} ${
                     leftRelatedEntry
-                      ? "border-brand-200 hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-lg active:scale-[0.99]"
+                      ? "border-[#F0F0F0] hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-lg active:scale-[0.99]"
                       : "cursor-default border-brand-100 bg-brand-50/40 opacity-70"
                   }`}
                   onClick={() => {
@@ -1653,7 +1653,7 @@ export function StorageEntriesSection({
                 </button>
 
                 <section
-                  className={`w-full max-w-[560px] shrink-0 rounded-card border border-brand-200 bg-white p-4 shadow-card transform-gpu transition-all duration-300 ease-out md:p-5 ${centerCardScaleClass}`}
+                  className={`w-full max-w-[calc(100vw-2rem)] shrink-0 rounded-card border border-[#F0F0F0] bg-white p-4 shadow-card transform-gpu transition-all duration-300 ease-out md:max-w-[560px] md:p-5 ${centerCardScaleClass}`}
                 >
                   <div className="mb-4 flex items-center justify-between gap-2">
                   <h3 className="text-lg font-extrabold tracking-tight text-ink-900">
@@ -1693,7 +1693,7 @@ export function StorageEntriesSection({
 
                     {entryFoldersOpen && (
                       <section
-                        className="absolute right-0 top-[calc(100%+10px)] z-40 w-[280px] max-w-[calc(100vw-3rem)] rounded-card border border-brand-200 bg-white p-3 shadow-card"
+                        className="absolute right-0 top-[calc(100%+10px)] z-40 w-[280px] max-w-[calc(100vw-3rem)] rounded-card border border-[#F0F0F0] bg-white p-3 shadow-card"
                         role="menu"
                         aria-label={t("storage.entryFoldersMenuAria")}
                       >
@@ -1712,7 +1712,7 @@ export function StorageEntriesSection({
                                   className={`flex w-full items-center justify-between rounded-control border px-2.5 py-2 text-sm font-semibold transition ${
                                     folder.selected
                                       ? "border-brand-400 bg-brand-100 text-brand-800"
-                                      : "border-brand-200 bg-white text-ink-800 hover:bg-brand-50"
+                                      : "border-[#F0F0F0] bg-white text-ink-800 hover:bg-brand-50"
                                   }`}
                                   disabled={updatingFolderId === folder.id}
                                   onClick={() => void handleToggleEntryFolder(folder)}
@@ -1816,7 +1816,7 @@ export function StorageEntriesSection({
                                 setDetailSaveSuccess(null);
                               }
                             }}
-                            className="w-full rounded-control border border-brand-200 bg-white px-3 py-2.5 text-body text-ink-800 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-70 resize-none min-h-[160px] max-h-[300px] overflow-y-scroll"
+                            className="w-full rounded-control border border-[#F0F0F0] bg-white px-3 py-2.5 text-body text-ink-800 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-70 resize-none min-h-[160px] max-h-[300px] overflow-y-scroll"
                             aria-label={t("storage.detailDescription")}
                             disabled={savingField === "text"}
                           />
@@ -2252,7 +2252,7 @@ export function StorageEntriesSection({
             </button>
 
             <section
-              className={`w-full max-w-[560px] shrink-0 p-4 transform-gpu transition-all duration-300 ease-out md:p-5 ${centerCardScaleClass}`}
+              className={`w-full max-w-[calc(100vw-2rem)] shrink-0 p-4 transform-gpu transition-all duration-300 ease-out md:max-w-[560px] md:p-5 ${centerCardScaleClass}`}
               style={{ 
                 background: 'rgba(255, 255, 255, 0.77)',
                 backdropFilter: 'blur(10px)',
@@ -2607,7 +2607,7 @@ export function StorageEntriesSection({
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
                     {t("storage.youtubeVideos")}
                   </p>
-                  <div className="mt-2 grid gap-3">
+                  <div className="scrollbar-brand mt-2 grid max-h-96 gap-3 overflow-y-auto pr-1">
                     {selectedEntryYoutubeVideos.map((video) => (
                       <div key={`${video.id}-${video.videoId}`} className="grid gap-2">
                         {video.isShort && (
@@ -2618,12 +2618,12 @@ export function StorageEntriesSection({
                         <div className={video.isShort ? "flex justify-center" : ""}>
                           <div
                             className={`overflow-hidden rounded-control border border-brand-200 bg-brand-50 ${
-                              video.isShort ? "w-full max-w-[250px]" : "w-full"
+                              video.isShort ? "w-full max-w-[200px]" : "w-full"
                             }`}
                             style={video.isShort ? { aspectRatio: "9 / 16" } : undefined}
                           >
                             <iframe
-                              className={video.isShort ? "h-full w-full" : "h-44 w-full"}
+                              className={video.isShort ? "h-full w-full" : "h-32 w-full"}
                               src={video.embedUrl}
                               title={video.title}
                               loading="lazy"
@@ -2657,7 +2657,7 @@ export function StorageEntriesSection({
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
                     {t("storage.twitchVideos")}
                   </p>
-                  <div className="mt-2 grid gap-3">
+                  <div className="scrollbar-brand mt-2 grid max-h-96 gap-3 overflow-y-auto pr-1">
                     {selectedEntryTwitchVideos.map((video) => (
                       <div key={`${video.id}-${video.embedUrl}`} className="grid gap-2">
                         {(() => {
@@ -2674,7 +2674,7 @@ export function StorageEntriesSection({
                           }`}
                         >
                           <iframe
-                            className="h-44 w-full"
+                            className="h-32 w-full"
                             src={video.embedUrl}
                             title={video.title}
                             loading="lazy"

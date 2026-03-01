@@ -1,5 +1,5 @@
 export const appShellClass =
-  "min-h-screen bg-gradient-to-br from-[#13505B] to-[#119DA4] px-4 py-4 md:px-7 md:py-7";
+  "min-h-screen bg-cover bg-center bg-no-repeat px-4 py-4 md:px-7 md:py-7";
 
 export const appCenterClass =
   "mx-auto grid min-h-[calc(100vh-2rem)] w-full place-items-center md:min-h-[calc(100vh-3.5rem)]";

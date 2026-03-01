@@ -306,7 +306,7 @@ export function InboxEntryCreateForm({
       </section>
 
       <section className="glass-card h-auto w-full max-w-full overflow-visible p-3">
-        <div className="grid grid-cols-4 gap-2 sm:flex sm:items-center sm:gap-2">
+        <div className="grid grid-cols-4 gap-2 sm:flex sm:items-center sm:gap-3">
           <IconToggleButton
             label={t("icon.youtube")}
             active={values.selectedPrimaryOption === "youtube"}
@@ -348,14 +348,6 @@ export function InboxEntryCreateForm({
             <TableIcon className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
-            label={t("icon.enumeration")}
-            active={values.selectedPrimaryOption === "enumeration"}
-            disabled={submitting}
-            onClick={() => togglePrimaryOption("enumeration")}
-          >
-            <ListBulletIcon className="h-6 w-6" />
-          </IconToggleButton>
-          <IconToggleButton
             label={t("icon.checklist")}
             active={values.selectedPrimaryOption === "checklist"}
             disabled={submitting}
@@ -364,7 +356,7 @@ export function InboxEntryCreateForm({
             <ChecklistIcon className="h-6 w-6" />
           </IconToggleButton>
 
-          <div className="col-span-4 my-1 hidden h-11 w-px justify-self-center bg-brand-200 sm:mx-3 sm:my-0 sm:block" />
+          <div className="col-span-4 my-1 hidden h-11 w-px justify-self-center bg-gray-700 sm:mx-3 sm:my-0 sm:block" />
 
           <IconToggleButton label={t("icon.alarm")} active={values.alarmEnabled} disabled={submitting} onClick={toggleAlarm}>
             <AlarmClockIcon className="h-6 w-6" />
