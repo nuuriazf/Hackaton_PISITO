@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { isApiError } from "../../api/client";
-import { createEntry, fetchEntries } from "../../api/resources";
+import { createEntry, fetchEntries, uploadFile } from "../../api/resources";
 import { validatePassword, validateUsername } from "../../features/auth/formValidation";
 import { useI18n } from "../../i18n/I18nProvider";
 import type { AppLanguage, I18nKey } from "../../i18n/messages";
@@ -46,7 +46,7 @@ type ProfileFormSection = "username" | "password";
 const INITIAL_INBOX_ENTRY_FORM: InboxEntryFormValues = {
   title: "",
   textContent: "",
-  mediaFile: null,
+  mediaFiles: [],
   selectedPrimaryOption: null,
   alarmEnabled: false
 };
@@ -86,17 +86,6 @@ function footerButtonClass(active: boolean, withRightBorder: boolean) {
   ]
     .filter(Boolean)
     .join(" ");
-}
-
-function buildMediaStorageKey(fileName: string) {
-  const safeName =
-    fileName
-      .toLowerCase()
-      .replace(/[^a-z0-9._-]+/g, "-")
-      .replace(/-{2,}/g, "-")
-      .replace(/^-|-$/g, "") || "archivo";
-
-  return `uploads/${Date.now()}-${safeName}`;
 }
 
 const SECTION_PATH_MAP: Record<InboxSection, string> = {
@@ -299,20 +288,22 @@ export function ContentInbox({
       });
     }
 
-    if (inboxEntryForm.mediaFile) {
-      const file = inboxEntryForm.mediaFile;
-      resources.push({
-        type: "MEDIA",
-        title: file.type.startsWith("video/") ? t("resource.video") : t("resource.file"),
-        storageKey: buildMediaStorageKey(file.name),
-        fileName: file.name,
-        mimeType: file.type || undefined
-      });
-    }
-
     try {
       setInboxSubmitting(true);
       resetInboxFeedback();
+
+      if (inboxEntryForm.mediaFiles.length > 0) {
+        for (const file of inboxEntryForm.mediaFiles) {
+          const uploaded = await uploadFile(file);
+          resources.push({
+            type: "MEDIA",
+            title: file.type.startsWith("video/") ? t("resource.video") : t("resource.file"),
+            storageKey: uploaded.path,
+            fileName: uploaded.fileName || file.name,
+            mimeType: uploaded.mimeType || file.type || undefined
+          });
+        }
+      }
 
       const createdEntry = await createEntry({
         title: title || undefined,

@@ -26,8 +26,8 @@ public class Folder {
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private AppUser owner;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToMany(mappedBy = "folders")
     private Set<Entry> entries = new LinkedHashSet<>();
@@ -48,12 +48,12 @@ public class Folder {
         this.title = title;
     }
 
-    public AppUser getOwner() {
-        return owner;
+    public User getUser() {
+        return user;
     }
 
-    public void setOwner(AppUser owner) {
-        this.owner = owner;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public Set<Entry> getEntries() {

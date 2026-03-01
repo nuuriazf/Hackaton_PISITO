@@ -1,3 +1,9 @@
+export type TagItem = {
+  id: number;
+  name: string;
+  createdAt: string;
+};
+
 export type ResourceType = "TEXT" | "RAW" | "LINK" | "MEDIA";
 export type EntryFlag =
   | "RAW"
@@ -26,6 +32,7 @@ export type EntryItem = {
   title: string;
   flag: EntryFlag | null;
   resources: ResourceItem[];
+  tags: TagItem[];
   createdAt: string;
   updatedAt: string;
 };
@@ -73,4 +80,11 @@ export type CreateMediaResourceInput = {
   storageKey: string;
   fileName?: string;
   mimeType?: string;
+};
+
+export type UploadFileResult = {
+  path: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
 };

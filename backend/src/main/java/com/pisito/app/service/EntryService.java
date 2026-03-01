@@ -9,16 +9,19 @@ import com.pisito.app.controller.dto.resource.CreateMediaResourceRequest;
 import com.pisito.app.controller.dto.resource.CreateTextResourceRequest;
 import com.pisito.app.controller.dto.resource.ResourceResponse;
 import com.pisito.app.controller.dto.resource.UpdateTextResourceRequest;
-import com.pisito.app.model.AppUser;
+import com.pisito.app.controller.dto.tag.TagResponse;
+import com.pisito.app.model.User;
 import com.pisito.app.model.Entry;
 import com.pisito.app.model.FlagEnum;
 import com.pisito.app.model.LinkResource;
 import com.pisito.app.model.MediaResource;
 import com.pisito.app.model.Resource;
 import com.pisito.app.model.ResourceType;
+import com.pisito.app.model.Tag;
 import com.pisito.app.model.TextResource;
 import com.pisito.app.repository.EntryRepository;
 import com.pisito.app.repository.ResourceRepository;
+import com.pisito.app.repository.TagRepository;
 import com.pisito.app.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +42,9 @@ public class EntryService {
 
     private final EntryRepository entryRepository;
     private final ResourceRepository resourceRepository;
+    private final TagRepository tagRepository;
     private final OllamaTitleService ollamaTitleService;
+    private final OllamaTagsService ollamaTagsService;
     private final SpotifySongLinkService spotifySongLinkService;
     private final YouTubeVideoLinkService youTubeVideoLinkService;
     private final TwitchVideoLinkService twitchVideoLinkService;
@@ -48,7 +53,9 @@ public class EntryService {
     public EntryService(
         EntryRepository entryRepository,
         ResourceRepository resourceRepository,
+        TagRepository tagRepository,
         OllamaTitleService ollamaTitleService,
+        OllamaTagsService ollamaTagsService,
         SpotifySongLinkService spotifySongLinkService,
         YouTubeVideoLinkService youTubeVideoLinkService,
         TwitchVideoLinkService twitchVideoLinkService,
@@ -56,7 +63,9 @@ public class EntryService {
     ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
+        this.tagRepository = tagRepository;
         this.ollamaTitleService = ollamaTitleService;
+        this.ollamaTagsService = ollamaTagsService;
         this.spotifySongLinkService = spotifySongLinkService;
         this.youTubeVideoLinkService = youTubeVideoLinkService;
         this.twitchVideoLinkService = twitchVideoLinkService;
@@ -97,7 +106,7 @@ public class EntryService {
     }
 
     private EntryResponse createEntryInternal(Long userId, CreateNoteRequest request) {
-        AppUser user = getUserOrThrow(userId);
+        User user = getUserOrThrow(userId);
         boolean youtubeFlag = request.getFlag() == FlagEnum.YOUTUBE;
         boolean twitchFlag = request.getFlag() == FlagEnum.TWITCH;
 
@@ -107,6 +116,7 @@ public class EntryService {
 
         String firstTextContent = null;
         StringBuilder allTextContent = new StringBuilder();
+        List<String> uploadedFileNames = new ArrayList<>();
         for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
             if ((youtubeFlag || twitchFlag) && isTextResourceType(resourceRequest.getType())) {
                 String rawText = trimOrNull(resourceRequest.getTextContent());
@@ -136,6 +146,25 @@ public class EntryService {
                 }
                 allTextContent.append(textResource.getTextContent().trim());
             }
+            if (resource instanceof MediaResource mediaResource) {
+                String fileName = trimOrNull(mediaResource.getFileName());
+                if (!StringUtils.hasText(fileName)) {
+                    fileName = extractFileNameFromStorageKey(mediaResource.getStorageKey());
+                }
+                if (StringUtils.hasText(fileName)) {
+                    uploadedFileNames.add(fileName);
+                }
+            }
+        }
+
+        if (firstTextContent == null && !uploadedFileNames.isEmpty()) {
+            String fallbackText = String.join("\n", uploadedFileNames);
+            TextResource filesDescription = new TextResource();
+            filesDescription.setTitle("Archivos");
+            filesDescription.setTextContent(fallbackText);
+            entry.addResource(filesDescription);
+            firstTextContent = fallbackText;
+            allTextContent.append(fallbackText);
         }
 
         if (youtubeFlag) {
@@ -238,10 +267,41 @@ public class EntryService {
                 songLink.setTitle("Cancion principal en Spotify");
                 songLink.setUrl(link);
                 entry.addResource(songLink);
-                log.info("createEntry spotify link added for userId={} url={}", userId, link);
             });
         }
 
+        if (entry.getFlag() == FlagEnum.CHECKLIST) {
+            String checklistContext = allTextContent.isEmpty() ? title : allTextContent.toString();
+            if (StringUtils.hasText(checklistContext)) {
+                try {
+                    String todoList = ollamaTitleService.generateTodoList(checklistContext);
+                    TextResource checklistResource = new TextResource();
+                    checklistResource.setTitle("Checklist");
+                    checklistResource.setTextContent(todoList);
+                    entry.addResource(checklistResource);
+                    log.info("createEntry checklist generated for userId={}", userId);
+                } catch (Exception ex) {
+                    log.warn("createEntry checklist generation failed for userId={}", userId, ex);
+                }
+            }
+        }
+
+        // Manejar tags - IA siempre sugiere basada en contenido
+        List<Tag> allTags = tagRepository.findAll();
+        List<String> existingTagNames = allTags.stream().map(Tag::getName).toList();
+        
+        String contentForTags = entry.getTitle() + "\n" + allTextContent;
+        List<String> suggestedTagNames = ollamaTagsService.suggestTags(contentForTags, existingTagNames);
+        
+        for (String tagName : suggestedTagNames) {
+            Tag tag = tagRepository.findByName(tagName)
+                .orElseGet(() -> {
+                    Tag newTag = new Tag();
+                    newTag.setName(tagName);
+                    return tagRepository.save(newTag);
+                });
+            entry.addTag(tag);
+        }
         return toEntryResponse(entryRepository.save(entry));
     }
 
@@ -360,7 +420,7 @@ public class EntryService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
     }
 
-    private AppUser getUserOrThrow(Long userId) {
+    private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
@@ -375,11 +435,16 @@ public class EntryService {
             .map(this::toResourceResponse)
             .toList();
 
+        List<TagResponse> tags = entry.getTags().stream()
+            .map(tag -> new TagResponse(tag.getId(), tag.getName(), tag.getCreatedAt()))
+            .toList();
+
         return new EntryResponse(
             entry.getId(),
             entry.getTitle(),
             entry.getFlag(),
             resources,
+            tags,
             entry.getCreateDate(),
             entry.getUpdateDate()
         );
@@ -432,5 +497,17 @@ public class EntryService {
 
     private static boolean isTextResourceType(ResourceType type) {
         return type == ResourceType.RAW || type == ResourceType.TEXT;
+    }
+
+    private static String extractFileNameFromStorageKey(String storageKey) {
+        String key = trimOrNull(storageKey);
+        if (!StringUtils.hasText(key)) {
+            return null;
+        }
+        int separatorIndex = key.lastIndexOf('/');
+        if (separatorIndex < 0 || separatorIndex + 1 >= key.length()) {
+            return key;
+        }
+        return key.substring(separatorIndex + 1);
     }
 }

@@ -18,6 +18,8 @@ public class CreateEntryRequest {
     private FlagEnum flag;
     private Boolean notification = false;
 
+    private List<Long> tagIds = new ArrayList<>();
+
     public String getTitle() {
         return title;
     }
@@ -48,6 +50,14 @@ public class CreateEntryRequest {
 
     public void setNotification(Boolean notification) {
         this.notification = notification;
+    }
+
+    public List<Long> getTagIds() {
+        return tagIds;
+    }
+
+    public void setTagIds(List<Long> tagIds) {
+        this.tagIds = tagIds == null ? new ArrayList<>() : tagIds;
     }
 }
 

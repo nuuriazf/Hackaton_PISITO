@@ -7,7 +7,8 @@ import type {
   CreateTextResourceInput,
   EntryItem,
   FolderItem,
-  ResourceItem
+  ResourceItem,
+  UploadFileResult
 } from "../types/resource";
 
 export function fetchEntries() {
@@ -59,6 +60,16 @@ export function createMediaResource(entryId: number, input: CreateMediaResourceI
   return api<ResourceItem>(`/entries/${entryId}/resources/media`, {
     method: "POST",
     body: JSON.stringify(input)
+  });
+}
+
+export function uploadFile(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return api<UploadFileResult>("/uploads", {
+    method: "POST",
+    body: formData
   });
 }
 

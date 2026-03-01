@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isApiError } from "../../../api/client";
 import {
   createTextResource,
@@ -14,6 +14,7 @@ import type { EntryFolderItem, EntryItem, FolderItem } from "../../../types/reso
 import { readErrorMessage } from "../../../utils/error";
 import { errorTextClass, fieldLabelClass, inputClass } from "../../ui/styles";
 import {
+  ArrowDownTrayIcon,
   ArrowLongLeftIcon,
   CreateFolderIcon,
   PencilSquareIcon,
@@ -35,21 +36,36 @@ type StorageEntriesSectionProps = {
   onUnauthorized: () => void;
 };
 
+const CHECKLIST_TITLES = new Set(["checklist", "todo list", "todolist", "todo"]);
+
+function isChecklistResource(resource: EntryItem["resources"][number]) {
+  if (resource.type !== "RAW") {
+    return false;
+  }
+  const title = (resource.title ?? "").trim().toLowerCase();
+  return CHECKLIST_TITLES.has(title);
+}
+
 function buildEntrySearchableText(entry: EntryItem) {
   const resourcesText = entry.resources
     .map((resource) =>
-      [resource.title, resource.textContent, resource.url, resource.storageKey, resource.fileName]
+      [resource.title, resource.textContent, resource.url, resource.fileName, resource.mimeType]
         .filter(Boolean)
         .join(" ")
     )
     .join(" ");
 
-  return `${entry.title} ${resourcesText}`.toLowerCase();
+  const tagsText = entry.tags?.map(tag => tag.name).join(" ") || "";
+
+  return `${entry.title} ${resourcesText} ${tagsText}`.toLowerCase();
 }
 
 function buildEntryText(entry: EntryItem, emptyText: string) {
   const textResources = entry.resources
-    .filter((resource) => resource.type === "RAW" || resource.type === "TEXT")
+    .filter(
+      (resource) =>
+        (resource.type === "RAW" && !isChecklistResource(resource)) || resource.type === "TEXT"
+    )
     .map((resource) => resource.textContent?.trim() ?? "")
     .filter(Boolean);
 
@@ -58,13 +74,162 @@ function buildEntryText(entry: EntryItem, emptyText: string) {
   }
 
   for (const resource of entry.resources) {
-    const preview = resource.textContent ?? resource.url ?? resource.storageKey ?? resource.fileName ?? resource.title;
+    const preview = resource.textContent ?? resource.url ?? resource.fileName ?? resource.title;
     if (preview) {
       return preview;
     }
   }
 
   return emptyText;
+}
+
+function buildEntryTodoListText(entry: EntryItem): string | null {
+  const todoResources = entry.resources
+    .filter((resource) => isChecklistResource(resource))
+    .map((resource) => resource.textContent?.trim() ?? "")
+    .filter(Boolean);
+
+  if (todoResources.length === 0) {
+    return null;
+  }
+  return todoResources.join("\n\n");
+}
+
+function parseCsvLine(line: string, delimiter: string): string[] {
+  const cells: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === delimiter && !inQuotes) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+
+  cells.push(current.trim());
+  return cells;
+}
+
+function detectCsvDelimiter(text: string): string {
+  const firstLine = text.split(/\r?\n/).find((line) => line.trim().length > 0) ?? "";
+  const commaCount = (firstLine.match(/,/g) ?? []).length;
+  const semicolonCount = (firstLine.match(/;/g) ?? []).length;
+  const tabCount = (firstLine.match(/\t/g) ?? []).length;
+
+  if (tabCount >= commaCount && tabCount >= semicolonCount && tabCount > 0) {
+    return "\t";
+  }
+  if (semicolonCount >= commaCount && semicolonCount > 0) {
+    return ";";
+  }
+  return ",";
+}
+
+function parseCsvTable(text: string): { headers: string[]; rows: string[][] } | null {
+  if (!text.trim()) {
+    return null;
+  }
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return null;
+  }
+
+  const delimiter = detectCsvDelimiter(text);
+  const parsedRows = lines.map((line) => parseCsvLine(line, delimiter));
+  const maxColumns = Math.max(...parsedRows.map((row) => row.length));
+
+  if (maxColumns < 2) {
+    return null;
+  }
+
+  const normalized = parsedRows.map((row) => {
+    if (row.length >= maxColumns) {
+      return row;
+    }
+    return [...row, ...Array(maxColumns - row.length).fill("")];
+  });
+
+  const [headers, ...rows] = normalized;
+  return { headers, rows };
+}
+
+function renderTodoListMarkdown(markdown: string): ReactNode {
+  const lines = markdown.split(/\r?\n/);
+
+  return lines.map((rawLine, index) => {
+    const line = rawLine.trim();
+
+    if (!line) {
+      return <div key={`spacer-${index}`} className="h-1" />;
+    }
+
+    if (line.startsWith("## ")) {
+      return (
+        <h4 key={`h2-${index}`} className="text-sm font-extrabold tracking-wide text-ink-900">
+          {line.slice(3).trim()}
+        </h4>
+      );
+    }
+
+    if (line.startsWith("### ")) {
+      return (
+        <h5 key={`h3-${index}`} className="text-xs font-bold uppercase tracking-wide text-ink-600">
+          {line.slice(4).trim()}
+        </h5>
+      );
+    }
+
+    if (line.startsWith("- [ ] ") || line.startsWith("- [x] ") || line.startsWith("- [X] ")) {
+      const checked = line.startsWith("- [x] ") || line.startsWith("- [X] ");
+      const content = line.slice(6).trim();
+      return (
+        <div key={`task-${index}`} className="flex items-start gap-2 rounded-control border border-brand-200 bg-brand-50 px-2.5 py-1.5">
+          <span
+            className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
+              checked ? "border-brand-500 bg-brand-500 text-white" : "border-brand-300 bg-white text-transparent"
+            }`}
+            aria-hidden="true"
+          >
+            ✓
+          </span>
+          <p className="break-all whitespace-pre-wrap text-sm text-ink-800">{content}</p>
+        </div>
+      );
+    }
+
+    if (line.startsWith("- ")) {
+      return (
+        <div key={`bullet-${index}`} className="flex items-start gap-2 px-1">
+          <span className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-brand-500" aria-hidden="true" />
+          <p className="break-all whitespace-pre-wrap text-sm text-ink-700">{line.slice(2).trim()}</p>
+        </div>
+      );
+    }
+
+    return (
+      <p key={`p-${index}`} className="break-all whitespace-pre-wrap text-sm text-ink-700">
+        {line}
+      </p>
+    );
+  });
 }
 
 function getEntryLinks(entry: EntryItem) {
@@ -333,6 +498,113 @@ function getEntryTwitchVideos(entry: EntryItem): TwitchVideoPreview[] {
   return Array.from(videosByEmbed.values());
 }
 
+function resolveMediaUrl(path: string | null): string | null {
+  if (!path) {
+    return null;
+  }
+  const trimmed = path.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/api/uploads/")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/uploads/")) {
+    return `/api${trimmed}`;
+  }
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("uploads/")) {
+    return `/api/${trimmed}`;
+  }
+  return `/${trimmed}`;
+}
+
+function getEntryMedia(entry: EntryItem) {
+  return entry.resources
+    .filter((resource) => resource.type === "MEDIA")
+    .map((resource) => ({
+      id: resource.id,
+      title: resource.title?.trim() || resource.fileName || "Archivo",
+      fileName: resource.fileName || "archivo",
+      mimeType: resource.mimeType || "",
+      url: resolveMediaUrl(resource.storageKey)
+    }))
+    .filter((media) => Boolean(media.url));
+}
+
+function getEntryTagSet(entry: EntryItem) {
+  return new Set((entry.tags ?? []).map((tag) => tag.name.trim().toLowerCase()).filter(Boolean));
+}
+
+function tokenizeEntryText(value: string) {
+  return new Set(
+    value
+      .toLowerCase()
+      .split(/[^a-z0-9áéíóúüñ]+/i)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 3)
+  );
+}
+
+function getJaccardScore(a: Set<string>, b: Set<string>) {
+  if (a.size === 0 || b.size === 0) {
+    return 0;
+  }
+  let intersection = 0;
+  for (const token of a) {
+    if (b.has(token)) {
+      intersection += 1;
+    }
+  }
+  const union = a.size + b.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function getRelatedEntries(entries: EntryItem[], selectedEntry: EntryItem, maxItems = 2) {
+  const selectedTagSet = getEntryTagSet(selectedEntry);
+  const selectedTokens = tokenizeEntryText(buildEntrySearchableText(selectedEntry));
+
+  const candidates = entries
+    .filter((entry) => entry.id !== selectedEntry.id)
+    .map((entry) => {
+      const candidateTagSet = getEntryTagSet(entry);
+      let sharedTags = 0;
+      for (const tag of selectedTagSet) {
+        if (candidateTagSet.has(tag)) {
+          sharedTags += 1;
+        }
+      }
+
+      const textSimilarity = getJaccardScore(selectedTokens, tokenizeEntryText(buildEntrySearchableText(entry)));
+      const hasRelation = sharedTags > 0 || textSimilarity > 0;
+      const score = sharedTags * 3 + textSimilarity * 10;
+
+      return {
+        entry,
+        sharedTags,
+        textSimilarity,
+        hasRelation,
+        score
+      };
+    })
+    .filter((candidate) => candidate.hasRelation)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return b.entry.updatedAt.localeCompare(a.entry.updatedAt);
+    })
+    .slice(0, maxItems)
+    .map((candidate) => candidate.entry);
+
+  return candidates;
+}
+
 export function StorageEntriesSection({
   entries,
   loading,
@@ -367,8 +639,13 @@ export function StorageEntriesSection({
   const [savingField, setSavingField] = useState<"title" | "text" | null>(null);
   const [detailSaveError, setDetailSaveError] = useState<string | null>(null);
   const [detailSaveSuccess, setDetailSaveSuccess] = useState<string | null>(null);
+  const [carouselSliding, setCarouselSliding] = useState(false);
+  const [carouselDirection, setCarouselDirection] = useState<"left" | "right" | null>(null);
+  const [forcedLeftEntryId, setForcedLeftEntryId] = useState<number | null>(null);
+  const [forcedRightEntryId, setForcedRightEntryId] = useState<number | null>(null);
 
   const entryFoldersMenuRef = useRef<HTMLDivElement | null>(null);
+  const carouselTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filteredEntries = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
@@ -413,13 +690,88 @@ export function StorageEntriesSection({
       ),
     [selectedEntryLinks]
   );
+  const selectedEntryMedia = useMemo(
+    () => (selectedEntry ? getEntryMedia(selectedEntry) : []),
+    [selectedEntry]
+  );
 
   const selectedTextResource = useMemo(() => {
     if (!selectedEntry) {
       return null;
     }
-    return selectedEntry.resources.find((resource) => resource.type === "RAW" || resource.type === "TEXT") ?? null;
+    return (
+      selectedEntry.resources.find(
+        (resource) =>
+          (resource.type === "RAW" && !isChecklistResource(resource)) || resource.type === "TEXT"
+      ) ?? null
+    );
   }, [selectedEntry]);
+  const selectedTodoListText = useMemo(() => {
+    if (!selectedEntry) {
+      return null;
+    }
+    return buildEntryTodoListText(selectedEntry);
+  }, [selectedEntry]);
+  
+  const selectedCsvTable = useMemo(() => {
+    if (!selectedEntry || selectedEntry.flag !== "TABLE") {
+      return null;
+    }
+    const rawText = selectedTextResource?.textContent?.trim() ?? "";
+    if (!rawText) {
+      return null;
+    }
+    return parseCsvTable(rawText);
+  }, [selectedEntry, selectedTextResource]);
+
+  const relatedEntries = useMemo(() => {
+    if (!selectedEntry) {
+      return [];
+    }
+    return getRelatedEntries(entries, selectedEntry, 8);
+  }, [entries, selectedEntry]);
+  const entriesById = useMemo(() => {
+    return new Map(entries.map((entry) => [entry.id, entry]));
+  }, [entries]);
+  const { leftRelatedEntry, rightRelatedEntry } = useMemo(() => {
+    if (!selectedEntry) {
+      return { leftRelatedEntry: null, rightRelatedEntry: null };
+    }
+
+    const candidates = relatedEntries.filter((entry) => entry.id !== selectedEntry.id);
+    const usedIds = new Set<number>();
+
+    let left: EntryItem | null = null;
+    const forcedLeft = forcedLeftEntryId !== null ? entriesById.get(forcedLeftEntryId) ?? null : null;
+    if (forcedLeft && forcedLeft.id !== selectedEntry.id) {
+      left = forcedLeft;
+      usedIds.add(forcedLeft.id);
+    } else {
+      left = candidates.find((entry) => !usedIds.has(entry.id)) ?? null;
+      if (left) {
+        usedIds.add(left.id);
+      }
+    }
+
+    let right: EntryItem | null = null;
+    const forcedRight = forcedRightEntryId !== null ? entriesById.get(forcedRightEntryId) ?? null : null;
+    if (forcedRight && forcedRight.id !== selectedEntry.id && !usedIds.has(forcedRight.id)) {
+      right = forcedRight;
+      usedIds.add(forcedRight.id);
+    } else {
+      right = candidates.find((entry) => !usedIds.has(entry.id)) ?? null;
+      if (right) {
+        usedIds.add(right.id);
+      }
+    }
+
+    if (!right) {
+      right =
+        entries.find((entry) => entry.id !== selectedEntry.id && !usedIds.has(entry.id)) ?? null;
+    }
+
+    return { leftRelatedEntry: left, rightRelatedEntry: right };
+  }, [entries, entriesById, forcedLeftEntryId, forcedRightEntryId, relatedEntries, selectedEntry]);
 
   const selectedFolderEntries = useMemo(() => {
     if (!selectedFolder) {
@@ -546,6 +898,10 @@ export function StorageEntriesSection({
       setTextDraft("");
       setDetailSaveError(null);
       setDetailSaveSuccess(null);
+      setCarouselSliding(false);
+      setCarouselDirection(null);
+      setForcedLeftEntryId(null);
+      setForcedRightEntryId(null);
       return;
     }
 
@@ -605,6 +961,14 @@ export function StorageEntriesSection({
     document.addEventListener("mousedown", handleDocumentMouseDown);
     return () => document.removeEventListener("mousedown", handleDocumentMouseDown);
   }, [entryFoldersOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (carouselTimeoutRef.current) {
+        clearTimeout(carouselTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function iconToggleClass(active: boolean) {
     return [
@@ -809,6 +1173,54 @@ export function StorageEntriesSection({
       setSavingField(null);
     }
   }
+
+  function openRelatedEntry(entry: EntryItem, direction: "left" | "right") {
+    if (selectedEntryId === entry.id || carouselSliding) {
+      return;
+    }
+
+    const currentCenterId = selectedEntryId;
+    setCarouselDirection(direction);
+    setCarouselSliding(true);
+
+    if (carouselTimeoutRef.current) {
+      clearTimeout(carouselTimeoutRef.current);
+    }
+
+    carouselTimeoutRef.current = setTimeout(() => {
+      setSelectedEntryId(entry.id);
+      if (currentCenterId !== null) {
+        if (direction === "right") {
+          setForcedLeftEntryId(currentCenterId);
+          setForcedRightEntryId(null);
+        } else {
+          setForcedRightEntryId(currentCenterId);
+          setForcedLeftEntryId(null);
+        }
+      }
+      setCarouselSliding(false);
+      setCarouselDirection(null);
+      carouselTimeoutRef.current = null;
+    }, 320);
+  }
+  const carouselTranslateClass = carouselSliding
+    ? carouselDirection === "left"
+      ? "translate-x-[300px]"
+      : carouselDirection === "right"
+        ? "-translate-x-[300px]"
+        : "translate-x-0"
+    : "translate-x-0";
+  const leftCardScaleClass = carouselSliding
+    ? carouselDirection === "left"
+      ? "scale-[1.02] opacity-100"
+      : "scale-[0.88] opacity-75"
+    : "scale-95 opacity-95";
+  const centerCardScaleClass = carouselSliding ? "scale-[0.93] opacity-90" : "scale-100 opacity-100";
+  const rightCardScaleClass = carouselSliding
+    ? carouselDirection === "right"
+      ? "scale-[1.02] opacity-100"
+      : "scale-[0.88] opacity-75"
+    : "scale-95 opacity-95";
 
   const showingEntries = foldersViewActive && selectedFolder ? selectedFolderEntries : filteredEntries;
   const displayCards = useMemo<EntryDisplayCard[]>(() => {
@@ -1015,7 +1427,11 @@ export function StorageEntriesSection({
                       ? "border-brand-500 ring-2 ring-brand-100"
                       : "border-brand-200 hover:bg-brand-50"
                   }`}
-                  onClick={() => setSelectedEntryId(entry.id)}
+                  onClick={() => {
+                    setForcedLeftEntryId(null);
+                    setForcedRightEntryId(null);
+                    setSelectedEntryId(entry.id);
+                  }}
                 >
                   <div className="pr-12">
                     <h3 className="break-words text-base font-extrabold leading-snug text-ink-900">{cardTitle}</h3>
@@ -1081,6 +1497,18 @@ export function StorageEntriesSection({
                       {buildEntryText(entry, t("entries.noContent"))}
                     </p>
                   )}
+                  {entry.tags && entry.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {entry.tags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-800"
+                        >
+                          #{tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -1094,12 +1522,48 @@ export function StorageEntriesSection({
               aria-label={t("storage.detailTitle")}
               onClick={(event) => {
                 if (event.target === event.currentTarget) {
+                  setForcedLeftEntryId(null);
+                  setForcedRightEntryId(null);
                   setSelectedEntryId(null);
                 }
               }}
             >
-              <section className="w-full max-w-[560px] rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
-                <div className="mb-4 flex items-center justify-between gap-2">
+              <div className="w-full overflow-hidden">
+                <div
+                  className={`mx-auto flex w-full max-w-[1120px] items-center justify-center gap-3 transform-gpu transition-transform duration-300 ease-out ${carouselTranslateClass}`}
+                >
+                <button
+                  type="button"
+                  className={`hidden w-[220px] shrink-0 rounded-card border bg-white p-3 text-left shadow-card transform-gpu transition-all duration-300 ease-out lg:block ${leftCardScaleClass} ${
+                    leftRelatedEntry
+                      ? "border-brand-200 hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-lg active:scale-[0.99]"
+                      : "cursor-default border-brand-100 bg-brand-50/40 opacity-70"
+                  }`}
+                  onClick={() => {
+                    if (leftRelatedEntry) {
+                      openRelatedEntry(leftRelatedEntry, "left");
+                    }
+                  }}
+                  aria-label={leftRelatedEntry ? t("storage.openRelatedAria", { title: leftRelatedEntry.title }) : t("storage.noRelatedEntries")}
+                  disabled={!leftRelatedEntry || carouselSliding}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{t("storage.relatedLeft")}</p>
+                  {leftRelatedEntry ? (
+                    <>
+                      <h4 className="mt-1 break-words text-sm font-bold text-ink-900">{leftRelatedEntry.title}</h4>
+                      <p className="mt-2 break-words text-xs text-ink-700 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+                        {buildEntryText(leftRelatedEntry, t("entries.noContent"))}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-ink-600">{t("storage.noRelatedEntries")}</p>
+                  )}
+                </button>
+
+                <section
+                  className={`w-full max-w-[560px] shrink-0 rounded-card border border-brand-200 bg-white p-4 shadow-card transform-gpu transition-all duration-300 ease-out md:p-5 ${centerCardScaleClass}`}
+                >
+                  <div className="mb-4 flex items-center justify-between gap-2">
                   <h3 className="text-lg font-extrabold tracking-tight text-ink-900">
                     {t("storage.detailTitle")}
                   </h3>
@@ -1118,7 +1582,11 @@ export function StorageEntriesSection({
                       type="button"
                       className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-rose-300 bg-white text-rose-700 transition hover:bg-rose-50"
                       aria-label={t("storage.closeDetailAria")}
-                      onClick={() => setSelectedEntryId(null)}
+                      onClick={() => {
+                        setForcedLeftEntryId(null);
+                        setForcedRightEntryId(null);
+                        setSelectedEntryId(null);
+                      }}
                     >
                       <XMarkIcon className="h-5 w-5" />
                     </button>
@@ -1167,9 +1635,9 @@ export function StorageEntriesSection({
                       </section>
                     )}
                   </div>
-                </div>
+                  </div>
 
-                <div className="grid gap-3">
+                  <div className="grid gap-3">
                   <article className="flex items-start justify-between gap-3 rounded-control border border-brand-200 bg-white p-3">
                     <div className="min-w-0 w-full">
                       <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
@@ -1289,6 +1757,117 @@ export function StorageEntriesSection({
                     )}
                   </article>
 
+                  {selectedEntry.flag === "TABLE" && selectedCsvTable && (
+                    <article className="rounded-control border border-brand-200 bg-white p-3">
+                      <div className="min-w-0 w-full">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                          {t("storage.detailTable")}
+                        </p>
+                        <div className="scrollbar-brand mt-2 max-h-72 overflow-auto rounded-control border border-brand-200">
+                          <table className="min-w-full border-collapse text-sm">
+                            <thead className="bg-brand-50">
+                              <tr>
+                                {selectedCsvTable.headers.map((header, index) => (
+                                  <th
+                                    key={`csv-h-${index}`}
+                                    className="border-b border-brand-200 px-3 py-2 text-left font-semibold text-ink-800"
+                                  >
+                                    {header || `Col ${index + 1}`}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedCsvTable.rows.map((row, rowIndex) => (
+                                <tr key={`csv-r-${rowIndex}`} className="odd:bg-white even:bg-brand-50/40">
+                                  {row.map((cell, cellIndex) => (
+                                    <td
+                                      key={`csv-c-${rowIndex}-${cellIndex}`}
+                                      className="border-b border-brand-100 px-3 py-2 text-ink-700"
+                                    >
+                                      {cell}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </article>
+                  )}
+
+                  {selectedTodoListText && (
+                    <article className="rounded-control border border-brand-200 bg-white p-3">
+                      <div className="min-w-0 w-full">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                          {t("storage.detailTodoList")}
+                        </p>
+                        <div className="scrollbar-brand mt-2 grid max-h-72 gap-2 overflow-y-auto pr-1">
+                          {renderTodoListMarkdown(selectedTodoListText)}
+                        </div>
+                      </div>
+                    </article>
+                  )}
+
+                  {selectedEntryMedia.length > 0 && (
+                    <article className="rounded-control border border-brand-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {t("storage.detailAttachments")}
+                      </p>
+                      <div className="mt-2 grid max-h-72 grid-cols-1 gap-2 overflow-y-auto pr-1">
+                        {selectedEntryMedia.map((media) => {
+                          const mime = media.mimeType.toLowerCase();
+                          const isImage = mime.startsWith("image/");
+                          const isVideo = mime.startsWith("video/");
+                          const isAudio = mime.startsWith("audio/");
+                          const isPdf = mime === "application/pdf";
+                          const downloadName = media.fileName || "archivo";
+
+                          return (
+                            <div key={media.id} className="relative rounded-control border border-brand-200 bg-brand-50 p-2">
+                              <a
+                                href={media.url!}
+                                download={downloadName}
+                                aria-label={`Descargar ${downloadName}`}
+                                title="Descargar"
+                                className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-brand-300 bg-white text-brand-700 shadow-sm transition hover:bg-brand-100"
+                              >
+                                <ArrowDownTrayIcon className="h-4 w-4" />
+                              </a>
+                              <p className="mb-1 truncate text-xs font-semibold text-ink-800">{media.title}</p>
+
+                              {isImage && (
+                                <img
+                                  src={media.url!}
+                                  alt={media.fileName}
+                                  className="h-24 w-full rounded border border-brand-200 object-cover"
+                                />
+                              )}
+                              {isVideo && (
+                                <video src={media.url!} controls className="h-24 w-full rounded border border-brand-200 object-cover" />
+                              )}
+                              {isAudio && <audio src={media.url!} controls className="w-full" />}
+                              {isPdf && (
+                                <iframe src={media.url!} title={media.fileName} className="h-32 w-full rounded border border-brand-200" />
+                              )}
+                              {!isImage && !isVideo && !isAudio && !isPdf && (
+                                <a
+                                  href={media.url!}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex h-9 items-center rounded-control border border-brand-300 bg-white px-3 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+                                >
+                                  {media.fileName}
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </article>
+                  )}
+
                   {selectedEntryYoutubeVideos.length > 0 && (
                     <article className="rounded-control border border-brand-200 bg-white p-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
@@ -1399,12 +1978,59 @@ export function StorageEntriesSection({
                       </div>
                     </article>
                   )}
+                    {selectedEntry.tags && selectedEntry.tags.length > 0 && (
+                      <article className="rounded-control border border-brand-200 bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                          {t("storage.tags")}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selectedEntry.tags.map((tag) => (
+                            <span 
+                              key={tag.id} 
+                              className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-1 text-sm font-semibold text-brand-800"
+                            >
+                              #{tag.name}
+                            </span>
+                          ))}
+                        </div>
+                      </article>
+                    )}
                     {detailSaveError && <p className={errorTextClass}>{t("common.errorPrefix", { message: detailSaveError })}</p>}
                     {detailSaveSuccess && (
                       <p className="text-sm font-semibold text-emerald-600">{detailSaveSuccess}</p>
                     )}
+                  </div>
+                </section>
+
+                <button
+                  type="button"
+                  className={`hidden w-[220px] shrink-0 rounded-card border bg-white p-3 text-left shadow-card transform-gpu transition-all duration-300 ease-out lg:block ${rightCardScaleClass} ${
+                    rightRelatedEntry
+                      ? "border-brand-200 hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-lg active:scale-[0.99]"
+                      : "cursor-default border-brand-100 bg-brand-50/40 opacity-70"
+                  }`}
+                  onClick={() => {
+                    if (rightRelatedEntry) {
+                      openRelatedEntry(rightRelatedEntry, "right");
+                    }
+                  }}
+                  aria-label={rightRelatedEntry ? t("storage.openRelatedAria", { title: rightRelatedEntry.title }) : t("storage.noRelatedEntries")}
+                  disabled={!rightRelatedEntry || carouselSliding}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{t("storage.relatedRight")}</p>
+                  {rightRelatedEntry ? (
+                    <>
+                      <h4 className="mt-1 break-words text-sm font-bold text-ink-900">{rightRelatedEntry.title}</h4>
+                      <p className="mt-2 break-words text-xs text-ink-700 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+                        {buildEntryText(rightRelatedEntry, t("entries.noContent"))}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-ink-600">{t("storage.noRelatedEntries")}</p>
+                  )}
+                </button>
                 </div>
-              </section>
+              </div>
             </div>
           )}
         </>

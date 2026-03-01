@@ -2,9 +2,9 @@ package com.pisito.app.service;
 
 import com.pisito.app.controller.dto.folder.EntryFolderResponse;
 import com.pisito.app.controller.dto.folder.FolderResponse;
-import com.pisito.app.model.AppUser;
 import com.pisito.app.model.Entry;
 import com.pisito.app.model.Folder;
+import com.pisito.app.model.User;
 import com.pisito.app.repository.EntryRepository;
 import com.pisito.app.repository.FolderRepository;
 import com.pisito.app.repository.UserRepository;
@@ -36,7 +36,7 @@ public class FolderService {
 
     @Transactional(readOnly = true)
     public java.util.List<FolderResponse> findAll(Long userId) {
-        return folderRepository.findAllByOwnerIdOrderByTitleAsc(userId).stream()
+        return folderRepository.findAllByUserIdOrderByTitleAsc(userId).stream()
             .map(this::toFolderResponse)
             .toList();
     }
@@ -45,12 +45,12 @@ public class FolderService {
     public FolderResponse create(Long userId, String rawTitle) {
         String title = trimRequired(rawTitle, "title is required");
 
-        if (folderRepository.existsByOwnerIdAndTitleIgnoreCase(userId, title)) {
+        if (folderRepository.existsByUserIdAndTitleIgnoreCase(userId, title)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Folder title already exists");
         }
 
         Folder folder = new Folder();
-        folder.setOwner(getUserOrThrow(userId));
+        folder.setUser(getUserOrThrow(userId));
         folder.setTitle(title);
 
         return toFolderResponse(folderRepository.save(folder));
@@ -87,7 +87,7 @@ public class FolderService {
             .map(Folder::getId)
             .collect(Collectors.toSet());
 
-        return folderRepository.findAllByOwnerIdOrderByTitleAsc(userId).stream()
+        return folderRepository.findAllByUserIdOrderByTitleAsc(userId).stream()
             .map(folder -> new EntryFolderResponse(
                 folder.getId(),
                 folder.getTitle(),
@@ -106,11 +106,11 @@ public class FolderService {
     }
 
     private Folder getFolderOrThrow(Long userId, Long folderId) {
-        return folderRepository.findByIdAndOwnerId(folderId, userId)
+        return folderRepository.findByIdAndUserId(folderId, userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Folder not found"));
     }
 
-    private AppUser getUserOrThrow(Long userId) {
+    private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
