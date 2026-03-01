@@ -1,4 +1,4 @@
-import { DragEvent, FormEvent, ReactNode, useState } from "react";
+import { DragEvent, FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n/I18nProvider";
 import { Button } from "../ui/Button";
 import {
@@ -28,7 +28,7 @@ type PrimaryInboxOption =
 export type InboxEntryFormValues = {
   title: string;
   textContent: string;
-  mediaFile: File | null;
+  mediaFiles: File[];
   selectedPrimaryOption: PrimaryInboxOption | null;
   alarmEnabled: boolean;
 };
@@ -87,37 +87,71 @@ export function InboxEntryCreateForm({
   onChange
 }: InboxEntryCreateFormProps) {
   const { t } = useI18n();
-  const fileInputKey = values.mediaFile
-    ? `${values.mediaFile.name}-${values.mediaFile.lastModified}`
+  const fileInputKey = values.mediaFiles.length > 0
+    ? `${values.mediaFiles.length}-${values.mediaFiles[0].name}-${values.mediaFiles[0].lastModified}`
     : "empty-media";
   const [isFileDropActive, setIsFileDropActive] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const mainFileInputRef = useRef<HTMLInputElement | null>(null);
+  const quickAddInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (values.mediaFiles.length === 0) {
+      setPreviewUrls([]);
+      return;
+    }
+
+    const urls = values.mediaFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [values.mediaFiles]);
+
+  function formatFileSize(bytes: number) {
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void onSubmit();
   }
 
-  function updateMediaFile(file: File | null) {
-    onChange({ mediaFile: file });
+  function appendMediaFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+    const incomingFiles = Array.from(fileList);
+    onChange({ mediaFiles: [...values.mediaFiles, ...incomingFiles] });
   }
 
-  function handleFileDragOver(event: DragEvent<HTMLLabelElement>) {
+  function removeMediaFile(indexToRemove: number) {
+    onChange({
+      mediaFiles: values.mediaFiles.filter((_, index) => index !== indexToRemove)
+    });
+  }
+
+  function handleFileDragOver(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
     setIsFileDropActive(true);
   }
 
-  function handleFileDragLeave(event: DragEvent<HTMLLabelElement>) {
+  function handleFileDragLeave(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
       setIsFileDropActive(false);
     }
   }
 
-  function handleFileDrop(event: DragEvent<HTMLLabelElement>) {
+  function handleFileDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsFileDropActive(false);
-    updateMediaFile(event.dataTransfer.files?.[0] ?? null);
+    appendMediaFiles(event.dataTransfer.files ?? null);
   }
 
   function togglePrimaryOption(option: PrimaryInboxOption) {
@@ -164,7 +198,7 @@ export function InboxEntryCreateForm({
             />
           </label>
 
-          <label
+          <div
             className={`${fieldLabelClass} gap-2`}
             onDragEnter={() => setIsFileDropActive(true)}
             onDragOver={handleFileDragOver}
@@ -172,26 +206,109 @@ export function InboxEntryCreateForm({
             onDrop={handleFileDrop}
           >
             <span>{t("inbox.filesLabel")}</span>
-            <input
-              key={fileInputKey}
-              type="file"
-              accept="image/*,audio/*,video/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
-              disabled={submitting}
-              className="sr-only"
-              onChange={(event) => updateMediaFile(event.target.files?.[0] ?? null)}
-            />
-            <div
-              className={`rounded-control border-2 border-dashed px-4 py-5 text-center transition ${
-                isFileDropActive
-                  ? "border-brand-500 bg-brand-100 text-brand-800"
-                  : "border-brand-200 bg-brand-50 text-ink-700"
-              }`}
-            >
-              <div className="flex flex-col items-center justify-center gap-2">
-                <FileDropIcon className="h-7 w-7" />
+            {values.mediaFiles.length === 0 && (
+              <>
+                <input
+                  key={fileInputKey}
+                  ref={mainFileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,audio/*,video/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
+                  disabled={submitting}
+                  className="sr-only"
+                  onChange={(event) => appendMediaFiles(event.target.files ?? null)}
+                />
+                <div
+                  className={`rounded-control border-2 border-dashed px-4 py-5 text-center transition ${
+                    isFileDropActive
+                      ? "border-brand-500 bg-brand-100 text-brand-800"
+                      : "border-brand-200 bg-brand-50 text-ink-700"
+                  }`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => mainFileInputRef.current?.click()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      mainFileInputRef.current?.click();
+                    }
+                  }}
+                >
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <FileDropIcon className="h-7 w-7" />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {values.mediaFiles.length > 0 && (
+              <div className="mt-2 flex items-stretch gap-2">
+                <div className="min-w-0 flex-1 rounded-control border border-brand-200 bg-white p-2">
+                  <div className="grid max-h-44 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                    {values.mediaFiles.map((file, index) => {
+                      const previewUrl = previewUrls[index];
+                      return (
+                        <div key={`${file.name}-${file.lastModified}-${index}`} className="rounded-control border border-brand-200 bg-brand-50 p-2">
+                          <div className="mb-1 flex items-start justify-between gap-2">
+                            <p className="truncate text-xs font-semibold text-ink-800">{file.name}</p>
+                            <button
+                              type="button"
+                              className="shrink-0 rounded border border-brand-200 bg-white px-1 text-[10px] font-semibold text-ink-600 hover:bg-brand-100"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                removeMediaFile(index);
+                              }}
+                              disabled={submitting}
+                            >
+                              x
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-ink-500">
+                            {(file.type || "application/octet-stream") + " · " + formatFileSize(file.size)}
+                          </p>
+
+                          {previewUrl && file.type.startsWith("image/") && (
+                            <img
+                              src={previewUrl}
+                              alt={file.name}
+                              className="mt-1 h-16 w-full rounded border border-brand-200 object-cover"
+                            />
+                          )}
+                          {previewUrl && file.type.startsWith("video/") && (
+                            <video src={previewUrl} className="mt-1 h-16 w-full rounded border border-brand-200 object-cover" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label={t("inbox.filesLabel")}
+                  disabled={submitting}
+                  className="inline-flex w-12 shrink-0 items-center justify-center rounded-control border-2 border-dashed border-brand-200 bg-brand-50 text-2xl font-bold leading-none text-brand-700 transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-70"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    quickAddInputRef.current?.click();
+                  }}
+                >
+                  +
+                </button>
+                <input
+                  ref={quickAddInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,audio/*,video/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
+                  disabled={submitting}
+                  className="sr-only"
+                  onChange={(event) => appendMediaFiles(event.target.files ?? null)}
+                />
               </div>
-            </div>
-          </label>
+            )}
+          </div>
         </div>
       </section>
 

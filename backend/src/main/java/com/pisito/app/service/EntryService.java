@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -85,6 +86,7 @@ public class EntryService {
 
         String firstTextContent = null;
         StringBuilder allTextContent = new StringBuilder();
+        List<String> uploadedFileNames = new ArrayList<>();
         for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
             Resource resource = buildResource(resourceRequest);
             entry.addResource(resource);
@@ -100,6 +102,25 @@ public class EntryService {
                 }
                 allTextContent.append(textResource.getTextContent().trim());
             }
+            if (resource instanceof MediaResource mediaResource) {
+                String fileName = trimOrNull(mediaResource.getFileName());
+                if (!StringUtils.hasText(fileName)) {
+                    fileName = extractFileNameFromStorageKey(mediaResource.getStorageKey());
+                }
+                if (StringUtils.hasText(fileName)) {
+                    uploadedFileNames.add(fileName);
+                }
+            }
+        }
+
+        if (firstTextContent == null && !uploadedFileNames.isEmpty()) {
+            String fallbackText = String.join("\n", uploadedFileNames);
+            TextResource filesDescription = new TextResource();
+            filesDescription.setTitle("Archivos");
+            filesDescription.setTextContent(fallbackText);
+            entry.addResource(filesDescription);
+            firstTextContent = fallbackText;
+            allTextContent.append(fallbackText);
         }
 
         String title = trimOrNull(request.getTitle());
@@ -360,5 +381,17 @@ public class EntryService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage);
         }
         return value.trim();
+    }
+
+    private static String extractFileNameFromStorageKey(String storageKey) {
+        String key = trimOrNull(storageKey);
+        if (!StringUtils.hasText(key)) {
+            return null;
+        }
+        int separatorIndex = key.lastIndexOf('/');
+        if (separatorIndex < 0 || separatorIndex + 1 >= key.length()) {
+            return key;
+        }
+        return key.substring(separatorIndex + 1);
     }
 }

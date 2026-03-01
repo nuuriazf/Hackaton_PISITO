@@ -81,3 +81,10 @@ export type CreateMediaResourceInput = {
   fileName?: string;
   mimeType?: string;
 };
+
+export type UploadFileResult = {
+  path: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+};

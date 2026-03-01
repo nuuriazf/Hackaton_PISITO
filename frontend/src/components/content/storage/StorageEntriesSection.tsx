@@ -14,6 +14,7 @@ import type { EntryFolderItem, EntryItem, FolderItem } from "../../../types/reso
 import { readErrorMessage } from "../../../utils/error";
 import { errorTextClass, fieldLabelClass, inputClass } from "../../ui/styles";
 import {
+  ArrowDownTrayIcon,
   ArrowLongLeftIcon,
   CreateFolderIcon,
   PencilSquareIcon,
@@ -46,7 +47,7 @@ function isChecklistResource(resource: EntryItem["resources"][number]) {
 function buildEntrySearchableText(entry: EntryItem) {
   const resourcesText = entry.resources
     .map((resource) =>
-      [resource.title, resource.textContent, resource.url, resource.storageKey, resource.fileName]
+      [resource.title, resource.textContent, resource.url, resource.fileName, resource.mimeType]
         .filter(Boolean)
         .join(" ")
     )
@@ -68,7 +69,7 @@ function buildEntryText(entry: EntryItem, emptyText: string) {
   }
 
   for (const resource of entry.resources) {
-    const preview = resource.textContent ?? resource.url ?? resource.storageKey ?? resource.fileName ?? resource.title;
+    const preview = resource.textContent ?? resource.url ?? resource.fileName ?? resource.title;
     if (preview) {
       return preview;
     }
@@ -236,6 +237,45 @@ function getEntryLinks(entry: EntryItem) {
     }));
 }
 
+function resolveMediaUrl(path: string | null): string | null {
+  if (!path) {
+    return null;
+  }
+  const trimmed = path.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/api/uploads/")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/uploads/")) {
+    return `/api${trimmed}`;
+  }
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("uploads/")) {
+    return `/api/${trimmed}`;
+  }
+  return `/${trimmed}`;
+}
+
+function getEntryMedia(entry: EntryItem) {
+  return entry.resources
+    .filter((resource) => resource.type === "MEDIA")
+    .map((resource) => ({
+      id: resource.id,
+      title: resource.title?.trim() || resource.fileName || "Archivo",
+      fileName: resource.fileName || "archivo",
+      mimeType: resource.mimeType || "",
+      url: resolveMediaUrl(resource.storageKey)
+    }))
+    .filter((media) => Boolean(media.url));
+}
+
 export function StorageEntriesSection({
   entries,
   loading,
@@ -299,6 +339,10 @@ export function StorageEntriesSection({
   }, [entries, selectedEntryId]);
   const selectedEntryLinks = useMemo(
     () => (selectedEntry ? getEntryLinks(selectedEntry) : []),
+    [selectedEntry]
+  );
+  const selectedEntryMedia = useMemo(
+    () => (selectedEntry ? getEntryMedia(selectedEntry) : []),
     [selectedEntry]
   );
 
@@ -1121,6 +1165,64 @@ export function StorageEntriesSection({
                         <div className="scrollbar-brand mt-2 grid max-h-72 gap-2 overflow-y-auto pr-1">
                           {renderTodoListMarkdown(selectedTodoListText)}
                         </div>
+                      </div>
+                    </article>
+                  )}
+
+                  {selectedEntryMedia.length > 0 && (
+                    <article className="rounded-control border border-brand-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {t("storage.detailAttachments")}
+                      </p>
+                      <div className="mt-2 grid max-h-72 grid-cols-1 gap-2 overflow-y-auto pr-1">
+                        {selectedEntryMedia.map((media) => {
+                          const mime = media.mimeType.toLowerCase();
+                          const isImage = mime.startsWith("image/");
+                          const isVideo = mime.startsWith("video/");
+                          const isAudio = mime.startsWith("audio/");
+                          const isPdf = mime === "application/pdf";
+                          const downloadName = media.fileName || "archivo";
+
+                          return (
+                            <div key={media.id} className="relative rounded-control border border-brand-200 bg-brand-50 p-2">
+                              <a
+                                href={media.url!}
+                                download={downloadName}
+                                aria-label={`Descargar ${downloadName}`}
+                                title="Descargar"
+                                className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-brand-300 bg-white text-brand-700 shadow-sm transition hover:bg-brand-100"
+                              >
+                                <ArrowDownTrayIcon className="h-4 w-4" />
+                              </a>
+                              <p className="mb-1 truncate text-xs font-semibold text-ink-800">{media.title}</p>
+
+                              {isImage && (
+                                <img
+                                  src={media.url!}
+                                  alt={media.fileName}
+                                  className="h-24 w-full rounded border border-brand-200 object-cover"
+                                />
+                              )}
+                              {isVideo && (
+                                <video src={media.url!} controls className="h-24 w-full rounded border border-brand-200 object-cover" />
+                              )}
+                              {isAudio && <audio src={media.url!} controls className="w-full" />}
+                              {isPdf && (
+                                <iframe src={media.url!} title={media.fileName} className="h-32 w-full rounded border border-brand-200" />
+                              )}
+                              {!isImage && !isVideo && !isAudio && !isPdf && (
+                                <a
+                                  href={media.url!}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex h-9 items-center rounded-control border border-brand-300 bg-white px-3 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+                                >
+                                  {media.fileName}
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </article>
                   )}

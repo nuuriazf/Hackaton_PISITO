@@ -1,4 +1,5 @@
 export {
+  ArrowDownTrayIcon,
   ArrowLongLeftIcon,
   ArrowUpRightIcon,
   BellAlertIcon,
