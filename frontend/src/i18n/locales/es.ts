@@ -27,6 +27,7 @@ export const ES_MESSAGES = {
   "settings.ariaButton": "Configuración",
   "notifications.ariaButton": "Notificaciones",
   "notifications.menuAria": "Panel de notificaciones",
+  "notifications.empty": "No hay notificaciones pendientes.",
   "settings.menuAria": "Opciones de configuración",
   "settings.title": "Configuración",
   "settings.language": "Idioma",

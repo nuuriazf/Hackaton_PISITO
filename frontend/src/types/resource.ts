@@ -33,6 +33,7 @@ export type EntryItem = {
   flag: EntryFlag | null;
   resources: ResourceItem[];
   tags: TagItem[];
+  notificationDate: string | null;
   createdAt: string;
   updatedAt: string;
 };
