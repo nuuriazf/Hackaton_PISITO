@@ -333,6 +333,7 @@ public class EntryService {
             entry.getFlag(),
             resources,
             tags,
+            entry.getNotificationDate(),
             entry.getCreateDate(),
             entry.getUpdateDate()
         );

@@ -31,6 +31,7 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "settings.ariaButton": "Configuración",
   "notifications.ariaButton": "Notificacións",
   "notifications.menuAria": "Panel de notificacións",
+  "notifications.empty": "Non hai notificacións pendentes.",
   "settings.menuAria": "Opcións de configuración",
   "settings.title": "Configuración",
   "settings.language": "Idioma",

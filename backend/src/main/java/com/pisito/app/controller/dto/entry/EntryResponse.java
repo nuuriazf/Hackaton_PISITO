@@ -13,6 +13,7 @@ public record EntryResponse(
     FlagEnum flag,
     List<ResourceResponse> resources,
     List<TagResponse> tags,
+    Instant notificationDate,
     Instant createdAt,
     Instant updatedAt
 ) {

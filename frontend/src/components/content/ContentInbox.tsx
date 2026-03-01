@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { isApiError } from "../../api/client";
 import { createEntry, fetchEntries, uploadFile } from "../../api/resources";
@@ -158,8 +158,26 @@ export function ContentInbox({
   const [activeProfileForm, setActiveProfileForm] = useState<ProfileFormSection | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [entryToOpenFromNotifications, setEntryToOpenFromNotifications] = useState<number | null>(null);
   const headerMenusRef = useRef<HTMLDivElement | null>(null);
   const successToastMessage = usernameMessage ?? passwordMessage ?? inboxMessage;
+  const notificationEntries = useMemo(() => {
+    return storageEntries
+      .filter((entry) => entry.notificationDate !== null)
+      .sort((a, b) => {
+        const leftTime = Date.parse(a.notificationDate ?? "");
+        const rightTime = Date.parse(b.notificationDate ?? "");
+        return leftTime - rightTime;
+      });
+  }, [storageEntries]);
+  const notificationDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(
+        appLanguage === "en" ? "en-US" : appLanguage === "fr" ? "fr-FR" : appLanguage === "gl" ? "gl-ES" : "es-ES",
+        { dateStyle: "medium", timeStyle: "short" }
+      ),
+    [appLanguage]
+  );
 
   useEffect(() => {
     setUsernameDraft("");
@@ -193,6 +211,16 @@ export function ContentInbox({
     }
     void loadStorageEntries();
   }, [activeSection, loadStorageEntries]);
+
+  useEffect(() => {
+    if (!notificationsOpen) {
+      return;
+    }
+    if (storageEntries.length > 0) {
+      return;
+    }
+    void loadStorageEntries();
+  }, [loadStorageEntries, notificationsOpen, storageEntries.length]);
 
   useEffect(() => {
     if (!settingsOpen && !notificationsOpen) {
@@ -448,10 +476,43 @@ export function ContentInbox({
 
             {notificationsOpen && (
               <section
-                className="absolute right-0 top-[calc(100%+10px)] z-40 h-28 w-56 rounded-card border border-brand-200 bg-white/95 p-3 shadow-card backdrop-blur-sm"
+                className="absolute right-0 top-[calc(100%+10px)] z-40 w-[320px] max-w-[calc(100vw-2rem)] rounded-card border border-brand-200 bg-white/95 p-3 shadow-card backdrop-blur-sm"
                 role="menu"
                 aria-label={t("notifications.menuAria")}
-              />
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">{t("notifications.ariaButton")}</p>
+
+                <div className="scrollbar-brand mt-2 max-h-80 overflow-y-auto pr-1">
+                  {storageLoading ? (
+                    <p className="text-sm text-ink-600">{t("storage.loading")}</p>
+                  ) : notificationEntries.length === 0 ? (
+                    <p className="text-sm text-ink-600">{t("notifications.empty")}</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {notificationEntries.map((entry) => (
+                        <li key={`notif-${entry.id}`}>
+                          <button
+                            type="button"
+                            className="w-full rounded-control border border-brand-200 bg-white px-2.5 py-2 text-left transition hover:bg-brand-50"
+                            onClick={() => {
+                              setEntryToOpenFromNotifications(entry.id);
+                              setNotificationsOpen(false);
+                              changeSection("storage");
+                            }}
+                          >
+                            <p className="truncate text-sm font-semibold text-ink-900">{entry.title}</p>
+                            <p className="mt-0.5 text-xs text-ink-600">
+                              {entry.notificationDate
+                                ? notificationDateFormatter.format(new Date(entry.notificationDate))
+                                : ""}
+                            </p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
             )}
           </div>
 
@@ -671,6 +732,8 @@ export function ContentInbox({
               onSearchChange={setStorageSearchValue}
               onEntriesUpdated={loadStorageEntries}
               onUnauthorized={onLogout}
+              entryToOpenId={entryToOpenFromNotifications}
+              onEntryToOpenHandled={() => setEntryToOpenFromNotifications(null)}
             />
           ) : (
             <section className="rounded-card border border-brand-200 bg-white/95 p-8 text-center shadow-card md:p-10">

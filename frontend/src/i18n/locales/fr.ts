@@ -31,6 +31,7 @@ export const FR_MESSAGES: Record<I18nKey, string> = {
   "settings.ariaButton": "Paramètres",
   "notifications.ariaButton": "Notifications",
   "notifications.menuAria": "Panneau des notifications",
+  "notifications.empty": "Il n y a pas de notifications en attente.",
   "settings.menuAria": "Options de paramètres",
   "settings.title": "Paramètres",
   "settings.language": "Langue",

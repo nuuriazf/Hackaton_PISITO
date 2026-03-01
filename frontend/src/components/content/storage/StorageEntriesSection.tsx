@@ -32,6 +32,8 @@ type StorageEntriesSectionProps = {
   onSearchChange: (value: string) => void;
   onEntriesUpdated: () => Promise<void> | void;
   onUnauthorized: () => void;
+  entryToOpenId?: number | null;
+  onEntryToOpenHandled?: () => void;
 };
 
 const CHECKLIST_TITLES = new Set(["checklist", "todo list", "todolist", "todo"]);
@@ -351,7 +353,9 @@ export function StorageEntriesSection({
   searchValue,
   onSearchChange,
   onEntriesUpdated,
-  onUnauthorized
+  onUnauthorized,
+  entryToOpenId = null,
+  onEntryToOpenHandled
 }: StorageEntriesSectionProps) {
   const { t } = useI18n();
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
@@ -410,6 +414,25 @@ export function StorageEntriesSection({
     }
     return entries.find((entry) => entry.id === selectedEntryId) ?? null;
   }, [entries, selectedEntryId]);
+
+  useEffect(() => {
+    if (entryToOpenId === null) {
+      return;
+    }
+
+    const targetEntry = entries.find((entry) => entry.id === entryToOpenId);
+    if (!targetEntry) {
+      if (!loading) {
+        onEntryToOpenHandled?.();
+      }
+      return;
+    }
+
+    setFoldersViewActive(false);
+    setSelectedFolder(null);
+    setSelectedEntryId(targetEntry.id);
+    onEntryToOpenHandled?.();
+  }, [entries, entryToOpenId, loading, onEntryToOpenHandled]);
   const selectedEntryLinks = useMemo(
     () => (selectedEntry ? getEntryLinks(selectedEntry) : []),
     [selectedEntry]
