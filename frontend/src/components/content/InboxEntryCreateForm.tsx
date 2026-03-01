@@ -13,7 +13,7 @@ import {
   TwitchIcon,
   YoutubeIcon
 } from "../ui/icons";
-import { errorTextClass, fieldLabelClass, inputClass, textareaClass } from "../ui/styles";
+import { errorTextClass, fieldLabelClass, inputClass } from "../ui/styles";
 
 type PrimaryInboxOption =
   | "youtube"
@@ -136,7 +136,7 @@ export function InboxEntryCreateForm({
         {heading ? (
           <div className="mb-4">
             <h2
-              className="text-center text-[19px] font-medium tracking-tight text-[#111827]"
+              className="text-center text-2xl font-extrabold tracking-tight text-ink-900"
               style={{ fontFamily: "Inter, sans-serif" }}
             >
               {t("inbox.composerHeading")}
@@ -163,7 +163,7 @@ export function InboxEntryCreateForm({
               disabled={submitting}
               autoFocus
               placeholder={t("inbox.textPlaceholder")}
-              className={`${textareaClass} scrollbar-brand min-h-[160px] max-h-[300px] resize-none overflow-y-scroll`}
+              className={`${inputClass} scrollbar-brand min-h-[160px] max-h-[300px] resize-none overflow-y-auto`}
               value={values.textContent}
               onChange={(event) => onChange({ textContent: event.target.value })}
             />
@@ -279,7 +279,7 @@ export function InboxEntryCreateForm({
               variant="primary"
               size="md"
               fullWidth
-              className="sm:min-w-[116px] sm:w-auto sm:px-5"
+              className="!text-[#F0F0F0] [--btn-text-hover:#F0F0F0] sm:min-w-[116px] sm:w-auto sm:px-5"
               disabled={submitting}
             >
               {submitting ? t("common.saving") : t("inbox.save")}

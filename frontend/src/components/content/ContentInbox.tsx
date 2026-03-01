@@ -8,9 +8,9 @@ import type { AppLanguage, I18nKey } from "../../i18n/messages";
 import type { UpdatePasswordInput, UpdateUsernameInput } from "../../types/auth";
 import type { CreateEntryResourceInput, EntryItem } from "../../types/resource";
 import { readErrorMessage } from "../../utils/error";
+import LogoNombre from "../../assets/LogoNombre.svg";
 import {
   Cog6ToothIcon,
-  FrameIcon,
   InboxArrowDownIcon,
   MagnifyingGlassIcon,
   NotificationBellIcon,
@@ -93,6 +93,7 @@ const SECTION_TITLE_KEY_MAP: Record<Exclude<InboxSection, "inbox" | "profile">, 
   storage: "section.storage",
   relationshipGraph: "section.relationshipGraph"
 };
+const fonditoBackgroundUrl = new URL("../../assets/fondocentro.jpg", import.meta.url).href;
 
 function sectionFromPath(pathname: string): InboxSection {
   if (pathname === "/profile") {
@@ -137,7 +138,6 @@ export function ContentInbox({
   const [storageLoading, setStorageLoading] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [storageSearchValue, setStorageSearchValue] = useState("");
-  const [inboxComposerExpanded, setInboxComposerExpanded] = useState(false);
 
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameCurrentPassword, setUsernameCurrentPassword] = useState("");
@@ -152,7 +152,6 @@ export function ContentInbox({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const headerMenusRef = useRef<HTMLDivElement | null>(null);
-  const inboxComposerRef = useRef<HTMLDivElement | null>(null);
   const successToastMessage = usernameMessage ?? passwordMessage ?? inboxMessage;
 
   useEffect(() => {
@@ -162,12 +161,6 @@ export function ContentInbox({
   useEffect(() => {
     setActiveSection(sectionFromPath(location.pathname));
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (activeSection !== "inbox") {
-      setInboxComposerExpanded(false);
-    }
-  }, [activeSection]);
 
   const loadStorageEntries = useCallback(async () => {
     try {
@@ -223,24 +216,6 @@ export function ContentInbox({
     };
   }, [notificationsOpen, settingsOpen]);
 
-  useEffect(() => {
-    if (activeSection !== "inbox" || !inboxComposerExpanded) {
-      return;
-    }
-
-    function handleDocumentMouseDown(event: MouseEvent) {
-      const target = event.target as Node;
-      if (!inboxComposerRef.current?.contains(target)) {
-        setInboxComposerExpanded(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleDocumentMouseDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handleDocumentMouseDown);
-    };
-  }, [activeSection, inboxComposerExpanded]);
 
   useEffect(() => {
     if (!successToastMessage) {
@@ -429,17 +404,22 @@ export function ContentInbox({
     }
   }
 
-  function openInboxComposer() {
-    setInboxComposerExpanded(true);
-  }
-
   return (
-    <section className="min-h-screen bg-gradient-to-br from-[#13505B] to-[#119DA4] p-3 sm:p-4">
-      <div className="mx-auto flex min-h-[calc(100vh-0.75rem)] items-center justify-center sm:min-h-[calc(100vh-1rem)]">
-        <div className="relative h-[750px] w-[1000px] max-h-[calc(100vh-1rem)] max-w-[calc(100vw-1rem)] rounded-[32px] border border-white/20 bg-white/12 p-1.5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:max-h-[calc(100vh-2rem)] sm:max-w-[calc(100vw-2rem)]">
-        <section className="relative h-full w-full overflow-hidden rounded-[26px] border border-white/35 bg-[#F0F0F0]">
+    <section className="h-screen w-full overflow-hidden bg-[linear-gradient(180deg,#F0F0F0_0%,#E5E7DC_55%,#D7D9CE_100%)]">
+      <section className="relative h-full w-full overflow-hidden bg-[#F0F0F0]">
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-16 top-16 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${fonditoBackgroundUrl})` }}
+        aria-hidden="true"
+      />
       <header className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-brand-200 bg-white/90 px-4 backdrop-blur-sm sm:px-6">
-        <h1 className="text-lg font-extrabold tracking-tight text-ink-900">{t("app.name")}</h1>
+        <img
+          src={LogoNombre}
+          alt={t("app.name")}
+          className="h-[56px] w-[97px]"
+          draggable={false}
+          onDragStart={(event) => event.preventDefault()}
+        />
         <div className="relative flex items-center gap-2" ref={headerMenusRef}>
           <div className="relative">
             <button
@@ -524,8 +504,8 @@ export function ContentInbox({
         </div>
       </header>
 
-      <main className="scrollbar-brand absolute inset-x-0 bottom-16 top-16 overflow-y-auto px-4 py-4 sm:px-6">
-        <div className="mx-auto w-full max-w-[840px] py-2">
+      <main className="scrollbar-brand absolute inset-x-0 bottom-16 top-16 z-10 overflow-y-auto px-4 py-4 sm:px-6">
+        <div className="mx-auto w-full max-w-[840px] origin-top scale-[1.08] py-2">
           {activeSection === "profile" ? (
             <section className="flex w-full flex-col gap-4">
               <section className="glass-card inbox-glass-text h-auto w-full max-w-full p-5 md:p-6">
@@ -664,34 +644,14 @@ export function ContentInbox({
               </section>
             </section>
           ) : activeSection === "inbox" ? (
-            inboxComposerExpanded ? (
-              <div ref={inboxComposerRef}>
-                <InboxEntryCreateForm
-                  values={inboxEntryForm}
-                  submitting={inboxSubmitting}
-                  error={inboxError}
-                  heading="Inbox"
-                  onSubmit={handleCreateInboxEntry}
-                  onChange={patchInboxEntryForm}
-                />
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="mx-auto flex h-[135px] w-[354px] max-w-full cursor-pointer items-center justify-center glass-card inbox-glass-text p-5 text-center"
-                onClick={openInboxComposer}
-              >
-                <div className="grid place-items-center gap-1.5">
-                  <FrameIcon className="h-8 w-8 brightness-0 opacity-85" />
-                  <p className="text-[18px] font-medium text-[#111827]" style={{ fontFamily: "Inter, sans-serif" }}>
-                    {t("inbox.previewTitle")}
-                  </p>
-                  <p className="text-[14px] font-normal text-[#111827]" style={{ fontFamily: "Inter, sans-serif" }}>
-                    {t("inbox.previewSubtitle")}
-                  </p>
-                </div>
-              </button>
-            )
+            <InboxEntryCreateForm
+              values={inboxEntryForm}
+              submitting={inboxSubmitting}
+              error={inboxError}
+              heading="Inbox"
+              onSubmit={handleCreateInboxEntry}
+              onChange={patchInboxEntryForm}
+            />
           ) : activeSection === "storage" ? (
             <StorageEntriesSection
               entries={storageEntries}
@@ -767,9 +727,7 @@ export function ContentInbox({
       </footer>
 
       <SuccessToast message={successToastMessage} visible={toastVisible} />
-        </section>
-        </div>
-      </div>
+      </section>
     </section>
   );
 }
