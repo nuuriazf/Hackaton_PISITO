@@ -3,6 +3,7 @@ import { isApiError } from "../../../api/client";
 import {
   createTextResource,
   createFolder,
+  deleteEntry,
   fetchEntryFolders,
   fetchFolders,
   updateEntryTitle,
@@ -20,6 +21,7 @@ import {
   PencilSquareIcon,
   StorageIcon,
   TextComponentIcon,
+  TrashIcon,
   TwitchIcon,
   YoutubeIcon,
   XMarkIcon
@@ -436,22 +438,30 @@ function getTwitchVariantBadgeConfig(variant: TwitchVideoPreview["variant"]) {
       return {
         labelKey: "storage.twitchLive" as const,
         className:
-          "inline-flex w-fit rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-700"
+          "inline-flex w-fit rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-violet-700"
       };
     case "vod":
       return {
         labelKey: "storage.twitchVod" as const,
         className:
-          "inline-flex w-fit rounded-full border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-indigo-700"
+          "inline-flex w-fit rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-violet-700"
       };
     case "clip":
     default:
       return {
         labelKey: "storage.twitchClip" as const,
         className:
-          "inline-flex w-fit rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-700"
+          "inline-flex w-fit rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-violet-700"
       };
   }
+}
+
+function getYouTubeTypeBadgeConfig(isShort: boolean) {
+  return {
+    label: isShort ? "SHORTS" : "VIDEO",
+    className:
+      "inline-flex w-fit rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-700"
+  };
 }
 
 function getEntryTwitchVideos(entry: EntryItem): TwitchVideoPreview[] {
@@ -643,6 +653,9 @@ export function StorageEntriesSection({
   const [savingField, setSavingField] = useState<"title" | "text" | null>(null);
   const [detailSaveError, setDetailSaveError] = useState<string | null>(null);
   const [detailSaveSuccess, setDetailSaveSuccess] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingEntry, setDeletingEntry] = useState(false);
+  const [deleteEntryError, setDeleteEntryError] = useState<string | null>(null);
   const [carouselSliding, setCarouselSliding] = useState(false);
   const [carouselDirection, setCarouselDirection] = useState<"left" | "right" | null>(null);
   const [forcedLeftEntryId, setForcedLeftEntryId] = useState<number | null>(null);
@@ -921,6 +934,9 @@ export function StorageEntriesSection({
       setTextDraft("");
       setDetailSaveError(null);
       setDetailSaveSuccess(null);
+      setDeleteConfirmOpen(false);
+      setDeletingEntry(false);
+      setDeleteEntryError(null);
       setCarouselSliding(false);
       setCarouselDirection(null);
       setForcedLeftEntryId(null);
@@ -957,6 +973,11 @@ export function StorageEntriesSection({
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        if (deleteConfirmOpen) {
+          setDeleteConfirmOpen(false);
+          setDeleteEntryError(null);
+          return;
+        }
         setSelectedEntryId(null);
         setSelectedFolder(null);
         setEntryFoldersOpen(false);
@@ -967,7 +988,7 @@ export function StorageEntriesSection({
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [createFolderModalOpen, entryFoldersOpen, selectedEntryId]);
+  }, [createFolderModalOpen, deleteConfirmOpen, entryFoldersOpen, selectedEntryId]);
 
   useEffect(() => {
     if (!entryFoldersOpen) {
@@ -1104,6 +1125,48 @@ export function StorageEntriesSection({
       }
       return next;
     });
+  }
+
+  function openDeleteEntryConfirm() {
+    if (!selectedEntry) {
+      return;
+    }
+    setEntryFoldersOpen(false);
+    setDeleteEntryError(null);
+    setDeleteConfirmOpen(true);
+  }
+
+  function closeDeleteEntryConfirm() {
+    if (deletingEntry) {
+      return;
+    }
+    setDeleteConfirmOpen(false);
+    setDeleteEntryError(null);
+  }
+
+  async function confirmDeleteSelectedEntry() {
+    if (!selectedEntry) {
+      return;
+    }
+
+    try {
+      setDeletingEntry(true);
+      setDeleteEntryError(null);
+      await deleteEntry(selectedEntry.id);
+      setDeleteConfirmOpen(false);
+      setForcedLeftEntryId(null);
+      setForcedRightEntryId(null);
+      setSelectedEntryId(null);
+      await onEntriesUpdated();
+    } catch (requestError) {
+      if (isApiError(requestError) && requestError.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      setDeleteEntryError(readErrorMessage(requestError, t("storage.deleteEntryError")));
+    } finally {
+      setDeletingEntry(false);
+    }
   }
 
   function startEditingField(field: "title" | "text") {
@@ -1459,16 +1522,21 @@ export function StorageEntriesSection({
                   <div className="pr-12">
                     <h3 className="break-words text-base font-extrabold leading-snug text-ink-900">{cardTitle}</h3>
                   </div>
-                  {isYoutubeCard && youtubeVideo!.isShort && (
-                    <span className="inline-flex w-fit rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-700">
-                      Shorts
-                    </span>
+                  {isYoutubeCard && (
+                    <div className="mt-2 flex justify-start">
+                      {(() => {
+                        const badge = getYouTubeTypeBadgeConfig(youtubeVideo!.isShort);
+                        return <span className={badge.className}>{badge.label}</span>;
+                      })()}
+                    </div>
                   )}
                   {isTwitchCard && (
-                    (() => {
-                      const badge = getTwitchVariantBadgeConfig(twitchVideo!.variant);
-                      return <span className={badge.className}>{t(badge.labelKey)}</span>;
-                    })()
+                    <div className="mt-2 flex justify-start">
+                      {(() => {
+                        const badge = getTwitchVariantBadgeConfig(twitchVideo!.variant);
+                        return <span className={badge.className}>{t(badge.labelKey)}</span>;
+                      })()}
+                    </div>
                   )}
                   {isYoutubeCard ? (
                     <YoutubeIcon className="pointer-events-none absolute right-4 top-4 h-7 w-7 text-rose-600" />
@@ -1479,7 +1547,7 @@ export function StorageEntriesSection({
                   )}
                   <div className="mt-2 h-px w-full bg-brand-200" />
                   {isYoutubeCard ? (
-                    <div className={youtubeVideo!.isShort ? "flex justify-center" : ""}>
+                    <div className={youtubeVideo!.isShort ? "mt-2 flex justify-center" : "mt-2"}>
                       <div
                         className={`overflow-hidden rounded-control border border-brand-200 bg-brand-50 ${
                           youtubeVideo!.isShort ? "w-full max-w-[220px]" : "w-full"
@@ -1498,7 +1566,7 @@ export function StorageEntriesSection({
                     </div>
                   ) : isTwitchCard ? (
                     <div
-                      className={`overflow-hidden rounded-control border ${
+                      className={`mt-2 overflow-hidden rounded-control border ${
                         twitchVideo!.variant === "live"
                           ? "border-rose-200 bg-rose-50"
                           : twitchVideo!.variant === "vod"
@@ -1591,6 +1659,14 @@ export function StorageEntriesSection({
                     {t("storage.detailTitle")}
                   </h3>
                   <div className="relative flex items-center gap-2" ref={entryFoldersMenuRef}>
+                    <button
+                      type="button"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-rose-300 bg-white text-rose-700 transition hover:bg-rose-50"
+                      aria-label={t("storage.deleteEntryAria")}
+                      onClick={openDeleteEntryConfirm}
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
                     <button
                       type="button"
                       className={iconToggleClass(entryFoldersOpen)}
@@ -1899,11 +1975,10 @@ export function StorageEntriesSection({
                       <div className="mt-2 grid gap-3">
                         {selectedEntryYoutubeVideos.map((video) => (
                           <div key={`${video.id}-${video.videoId}`} className="grid gap-2">
-                            {video.isShort && (
-                              <span className="inline-flex w-fit rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-700">
-                                Shorts
-                              </span>
-                            )}
+                            {(() => {
+                              const badge = getYouTubeTypeBadgeConfig(video.isShort);
+                              return <span className={badge.className}>{badge.label}</span>;
+                            })()}
                             <div className={video.isShort ? "flex justify-center" : ""}>
                               <div
                                 className={`overflow-hidden rounded-control border border-brand-200 bg-brand-50 ${
@@ -2054,6 +2129,51 @@ export function StorageEntriesSection({
                 </button>
                 </div>
               </div>
+            </div>
+          )}
+          {deleteConfirmOpen && selectedEntry && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/25 p-4 backdrop-blur-sm"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t("storage.deleteEntryConfirmTitle")}
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  closeDeleteEntryConfirm();
+                }
+              }}
+            >
+              <section className="w-full max-w-[420px] rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
+                <h3 className="text-lg font-extrabold tracking-tight text-ink-900">
+                  {t("storage.deleteEntryConfirmTitle")}
+                </h3>
+                <p className="mt-2 text-sm text-ink-700">
+                  {t("storage.deleteEntryConfirmMessage")}
+                </p>
+                {deleteEntryError && (
+                  <p className={`mt-2 ${errorTextClass}`}>
+                    {t("common.errorPrefix", { message: deleteEntryError })}
+                  </p>
+                )}
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex h-9 items-center justify-center rounded-control border border-brand-200 bg-white px-3 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-70"
+                    onClick={closeDeleteEntryConfirm}
+                    disabled={deletingEntry}
+                  >
+                    {t("storage.deleteEntryConfirmNo")}
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-9 items-center justify-center rounded-control border border-rose-500 bg-rose-500 px-3 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-70"
+                    onClick={() => void confirmDeleteSelectedEntry()}
+                    disabled={deletingEntry}
+                  >
+                    {deletingEntry ? t("common.saving") : t("storage.deleteEntryConfirmYes")}
+                  </button>
+                </div>
+              </section>
             </div>
           )}
         </>

@@ -170,5 +170,11 @@ export const ES_MESSAGES = {
   "resourceType.link": "Enlace",
   "resourceType.media": "Archivo",
   "resource.video": "Video",
-  "resource.file": "Archivo"
+  "resource.file": "Archivo",
+  "storage.deleteEntryAria": "Eliminar nota",
+  "storage.deleteEntryError": "No hemos podido eliminar esta nota.",
+  "storage.deleteEntryConfirmTitle": "¿Eliminar nota?",
+  "storage.deleteEntryConfirmMessage": "Esta acción no se puede deshacer. ¿Quieres eliminarla?",
+  "storage.deleteEntryConfirmYes": "Sí, eliminar",
+  "storage.deleteEntryConfirmNo": "No",
 } as const;
