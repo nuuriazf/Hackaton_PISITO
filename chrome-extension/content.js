@@ -2,8 +2,8 @@
   console.log("🚀 [PISITO] Script inyectado correctamente en:", window.location.hostname);
 
   const INBOX_URLS = [
-    "http://localhost:5173/inbox",
-    "http://localhost:4173/inbox"
+    "http://localhost:5173/extension-widget",
+    "http://localhost:4173/extension-widget"
   ];
 
   const HOTKEYS = [
