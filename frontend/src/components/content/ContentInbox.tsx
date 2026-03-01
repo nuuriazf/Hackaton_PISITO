@@ -527,7 +527,52 @@ export function ContentInbox({
         </div>
       </header>
 
-      <main className="scrollbar-brand absolute inset-x-0 bottom-16 top-16 overflow-y-auto px-4 py-4 sm:px-6">
+      <section className="fixed inset-x-0 top-16 z-20 hidden border-b border-brand-200 bg-white/90 backdrop-blur-sm md:block">
+        <div className="flex h-16 w-full px-4 sm:px-6">
+          <button
+            type="button"
+            className={footerButtonClass(activeSection === "explore", true)}
+            onClick={() => changeSection("explore")}
+            aria-label={t("footer.explore")}
+          >
+            <MagnifyingGlassIcon className="h-7 w-7" />
+          </button>
+          <button
+            type="button"
+            className={footerButtonClass(activeSection === "storage", true)}
+            onClick={() => changeSection("storage")}
+            aria-label={t("footer.storage")}
+          >
+            <StorageIcon className="h-7 w-7" />
+          </button>
+          <button
+            type="button"
+            className={footerButtonClass(activeSection === "inbox", true)}
+            onClick={() => changeSection("inbox")}
+            aria-label={t("footer.inbox")}
+          >
+            <InboxArrowDownIcon className="h-7 w-7" />
+          </button>
+          <button
+            type="button"
+            className={footerButtonClass(activeSection === "relationshipGraph", true)}
+            onClick={() => changeSection("relationshipGraph")}
+            aria-label={t("footer.relationshipGraph")}
+          >
+            <RelationshipGraphIcon className="h-7 w-7" />
+          </button>
+          <button
+            type="button"
+            className={footerButtonClass(activeSection === "profile", false)}
+            onClick={() => changeSection("profile")}
+            aria-label={t("footer.profile")}
+          >
+            <UserIcon className="h-7 w-7" />
+          </button>
+        </div>
+      </section>
+
+      <main className="scrollbar-brand absolute inset-x-0 bottom-16 top-16 overflow-y-auto px-4 py-4 sm:px-6 md:bottom-0 md:top-32">
         <div className="mx-auto w-full max-w-[840px] py-2">
           {activeSection === "profile" ? (
             <section className="flex w-full flex-col gap-4">
@@ -696,7 +741,7 @@ export function ContentInbox({
         </div>
       </main>
 
-      <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-200 bg-white/90 backdrop-blur-sm">
+      <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-200 bg-white/90 backdrop-blur-sm md:hidden">
         <div className="flex h-16 w-full">
           <button
             type="button"
