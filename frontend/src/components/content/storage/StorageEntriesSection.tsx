@@ -274,6 +274,8 @@ function getEntryMedia(entry: EntryItem) {
       url: resolveMediaUrl(resource.storageKey)
     }))
     .filter((media) => Boolean(media.url));
+}
+
 function getEntryTagSet(entry: EntryItem) {
   return new Set((entry.tags ?? []).map((tag) => tag.name.trim().toLowerCase()).filter(Boolean));
 }
