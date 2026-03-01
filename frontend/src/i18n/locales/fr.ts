@@ -61,6 +61,7 @@ export const FR_MESSAGES: Record<I18nKey, string> = {
   "storage.editFieldAria": "Modifier le champ",
   "storage.detailEntryTitle": "Titre",
   "storage.detailDescription": "Description",
+  "storage.detailTable": "Tableau",
   "storage.detailTodoList": "Todo list",
   "storage.detailAttachments": "Fichiers joints",
   "storage.detailNoAttachments": "Aucun fichier joint",

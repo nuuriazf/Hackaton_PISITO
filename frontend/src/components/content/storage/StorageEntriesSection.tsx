@@ -89,6 +89,82 @@ function buildEntryTodoListText(entry: EntryItem): string | null {
   return todoResources.join("\n\n");
 }
 
+function parseCsvLine(line: string, delimiter: string): string[] {
+  const cells: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === delimiter && !inQuotes) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+
+  cells.push(current.trim());
+  return cells;
+}
+
+function detectCsvDelimiter(text: string): string {
+  const firstLine = text.split(/\r?\n/).find((line) => line.trim().length > 0) ?? "";
+  const commaCount = (firstLine.match(/,/g) ?? []).length;
+  const semicolonCount = (firstLine.match(/;/g) ?? []).length;
+  const tabCount = (firstLine.match(/\t/g) ?? []).length;
+
+  if (tabCount >= commaCount && tabCount >= semicolonCount && tabCount > 0) {
+    return "\t";
+  }
+  if (semicolonCount >= commaCount && semicolonCount > 0) {
+    return ";";
+  }
+  return ",";
+}
+
+function parseCsvTable(text: string): { headers: string[]; rows: string[][] } | null {
+  if (!text.trim()) {
+    return null;
+  }
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return null;
+  }
+
+  const delimiter = detectCsvDelimiter(text);
+  const parsedRows = lines.map((line) => parseCsvLine(line, delimiter));
+  const maxColumns = Math.max(...parsedRows.map((row) => row.length));
+
+  if (maxColumns < 2) {
+    return null;
+  }
+
+  const normalized = parsedRows.map((row) => {
+    if (row.length >= maxColumns) {
+      return row;
+    }
+    return [...row, ...Array(maxColumns - row.length).fill("")];
+  });
+
+  const [headers, ...rows] = normalized;
+  return { headers, rows };
+}
+
 function renderTodoListMarkdown(markdown: string): ReactNode {
   const lines = markdown.split(/\r?\n/);
 
@@ -311,6 +387,18 @@ export function StorageEntriesSection({
     }
     return buildEntryTodoListText(selectedEntry);
   }, [selectedEntry]);
+  
+  const selectedCsvTable = useMemo(() => {
+    if (!selectedEntry || selectedEntry.flag !== "TABLE") {
+      return null;
+    }
+    const rawText = selectedTextResource?.textContent?.trim() ?? "";
+    if (!rawText) {
+      return null;
+    }
+    return parseCsvTable(rawText);
+  }, [selectedEntry, selectedTextResource]);
+
   const relatedEntries = useMemo(() => {
     if (!selectedEntry) {
       return [];
@@ -1210,6 +1298,46 @@ export function StorageEntriesSection({
                       </button>
                     )}
                   </article>
+
+                  {selectedEntry.flag === "TABLE" && selectedCsvTable && (
+                    <article className="rounded-control border border-brand-200 bg-white p-3">
+                      <div className="min-w-0 w-full">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                          {t("storage.detailTable")}
+                        </p>
+                        <div className="scrollbar-brand mt-2 max-h-72 overflow-auto rounded-control border border-brand-200">
+                          <table className="min-w-full border-collapse text-sm">
+                            <thead className="bg-brand-50">
+                              <tr>
+                                {selectedCsvTable.headers.map((header, index) => (
+                                  <th
+                                    key={`csv-h-${index}`}
+                                    className="border-b border-brand-200 px-3 py-2 text-left font-semibold text-ink-800"
+                                  >
+                                    {header || `Col ${index + 1}`}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedCsvTable.rows.map((row, rowIndex) => (
+                                <tr key={`csv-r-${rowIndex}`} className="odd:bg-white even:bg-brand-50/40">
+                                  {row.map((cell, cellIndex) => (
+                                    <td
+                                      key={`csv-c-${rowIndex}-${cellIndex}`}
+                                      className="border-b border-brand-100 px-3 py-2 text-ink-700"
+                                    >
+                                      {cell}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </article>
+                  )}
 
                   {selectedTodoListText && (
                     <article className="rounded-control border border-brand-200 bg-white p-3">

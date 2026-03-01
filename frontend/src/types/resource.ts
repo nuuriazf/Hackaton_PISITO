@@ -30,6 +30,7 @@ export type ResourceItem = {
 export type EntryItem = {
   id: number;
   title: string;
+  flag: EntryFlag;
   resources: ResourceItem[];
   tags: TagItem[];
   createdAt: string;
