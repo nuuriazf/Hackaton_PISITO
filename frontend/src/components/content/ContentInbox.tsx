@@ -855,15 +855,7 @@ export function ContentInbox({
                 onUnauthorized={onLogout}
               />
             ) : activeSection === "relationshipGraph" ? (
-              <GlassCard className="p-8 text-center md:p-10">
-                <div className="grid place-items-center gap-2.5">
-                  <RelationshipGraphIcon className="h-8 w-8" />
-                  <h2 className="heading-title text-center text-[#111827]">
-                    {t(SECTION_TITLE_KEY_MAP[activeSection])}
-                  </h2>
-                  <p className="text-sm font-medium text-[#111827]">{t("section.inProgress")}</p>
-                </div>
-              </GlassCard>
+              <RelationshipGraph />
             ) : (
               <GlassCard className="p-8 text-center md:p-10">
                 <h2 className="heading-title text-center text-[#111827]">
