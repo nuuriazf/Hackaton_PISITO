@@ -274,6 +274,72 @@ function getEntryMedia(entry: EntryItem) {
       url: resolveMediaUrl(resource.storageKey)
     }))
     .filter((media) => Boolean(media.url));
+function getEntryTagSet(entry: EntryItem) {
+  return new Set((entry.tags ?? []).map((tag) => tag.name.trim().toLowerCase()).filter(Boolean));
+}
+
+function tokenizeEntryText(value: string) {
+  return new Set(
+    value
+      .toLowerCase()
+      .split(/[^a-z0-9áéíóúüñ]+/i)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 3)
+  );
+}
+
+function getJaccardScore(a: Set<string>, b: Set<string>) {
+  if (a.size === 0 || b.size === 0) {
+    return 0;
+  }
+  let intersection = 0;
+  for (const token of a) {
+    if (b.has(token)) {
+      intersection += 1;
+    }
+  }
+  const union = a.size + b.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function getRelatedEntries(entries: EntryItem[], selectedEntry: EntryItem, maxItems = 2) {
+  const selectedTagSet = getEntryTagSet(selectedEntry);
+  const selectedTokens = tokenizeEntryText(buildEntrySearchableText(selectedEntry));
+
+  const candidates = entries
+    .filter((entry) => entry.id !== selectedEntry.id)
+    .map((entry) => {
+      const candidateTagSet = getEntryTagSet(entry);
+      let sharedTags = 0;
+      for (const tag of selectedTagSet) {
+        if (candidateTagSet.has(tag)) {
+          sharedTags += 1;
+        }
+      }
+
+      const textSimilarity = getJaccardScore(selectedTokens, tokenizeEntryText(buildEntrySearchableText(entry)));
+      const hasRelation = sharedTags > 0 || textSimilarity > 0;
+      const score = sharedTags * 3 + textSimilarity * 10;
+
+      return {
+        entry,
+        sharedTags,
+        textSimilarity,
+        hasRelation,
+        score
+      };
+    })
+    .filter((candidate) => candidate.hasRelation)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return b.entry.updatedAt.localeCompare(a.entry.updatedAt);
+    })
+    .slice(0, maxItems)
+    .map((candidate) => candidate.entry);
+
+  return candidates;
 }
 
 export function StorageEntriesSection({
@@ -310,8 +376,13 @@ export function StorageEntriesSection({
   const [savingField, setSavingField] = useState<"title" | "text" | null>(null);
   const [detailSaveError, setDetailSaveError] = useState<string | null>(null);
   const [detailSaveSuccess, setDetailSaveSuccess] = useState<string | null>(null);
+  const [carouselSliding, setCarouselSliding] = useState(false);
+  const [carouselDirection, setCarouselDirection] = useState<"left" | "right" | null>(null);
+  const [forcedLeftEntryId, setForcedLeftEntryId] = useState<number | null>(null);
+  const [forcedRightEntryId, setForcedRightEntryId] = useState<number | null>(null);
 
   const entryFoldersMenuRef = useRef<HTMLDivElement | null>(null);
+  const carouselTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filteredEntries = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
@@ -358,6 +429,7 @@ export function StorageEntriesSection({
     }
     return buildEntryTodoListText(selectedEntry);
   }, [selectedEntry]);
+  
   const selectedCsvTable = useMemo(() => {
     if (!selectedEntry || selectedEntry.flag !== "TABLE") {
       return null;
@@ -368,6 +440,55 @@ export function StorageEntriesSection({
     }
     return parseCsvTable(rawText);
   }, [selectedEntry, selectedTextResource]);
+
+  const relatedEntries = useMemo(() => {
+    if (!selectedEntry) {
+      return [];
+    }
+    return getRelatedEntries(entries, selectedEntry, 8);
+  }, [entries, selectedEntry]);
+  const entriesById = useMemo(() => {
+    return new Map(entries.map((entry) => [entry.id, entry]));
+  }, [entries]);
+  const { leftRelatedEntry, rightRelatedEntry } = useMemo(() => {
+    if (!selectedEntry) {
+      return { leftRelatedEntry: null, rightRelatedEntry: null };
+    }
+
+    const candidates = relatedEntries.filter((entry) => entry.id !== selectedEntry.id);
+    const usedIds = new Set<number>();
+
+    let left: EntryItem | null = null;
+    const forcedLeft = forcedLeftEntryId !== null ? entriesById.get(forcedLeftEntryId) ?? null : null;
+    if (forcedLeft && forcedLeft.id !== selectedEntry.id) {
+      left = forcedLeft;
+      usedIds.add(forcedLeft.id);
+    } else {
+      left = candidates.find((entry) => !usedIds.has(entry.id)) ?? null;
+      if (left) {
+        usedIds.add(left.id);
+      }
+    }
+
+    let right: EntryItem | null = null;
+    const forcedRight = forcedRightEntryId !== null ? entriesById.get(forcedRightEntryId) ?? null : null;
+    if (forcedRight && forcedRight.id !== selectedEntry.id && !usedIds.has(forcedRight.id)) {
+      right = forcedRight;
+      usedIds.add(forcedRight.id);
+    } else {
+      right = candidates.find((entry) => !usedIds.has(entry.id)) ?? null;
+      if (right) {
+        usedIds.add(right.id);
+      }
+    }
+
+    if (!right) {
+      right =
+        entries.find((entry) => entry.id !== selectedEntry.id && !usedIds.has(entry.id)) ?? null;
+    }
+
+    return { leftRelatedEntry: left, rightRelatedEntry: right };
+  }, [entries, entriesById, forcedLeftEntryId, forcedRightEntryId, relatedEntries, selectedEntry]);
 
   const selectedFolderEntries = useMemo(() => {
     if (!selectedFolder) {
@@ -494,6 +615,10 @@ export function StorageEntriesSection({
       setTextDraft("");
       setDetailSaveError(null);
       setDetailSaveSuccess(null);
+      setCarouselSliding(false);
+      setCarouselDirection(null);
+      setForcedLeftEntryId(null);
+      setForcedRightEntryId(null);
       return;
     }
 
@@ -553,6 +678,14 @@ export function StorageEntriesSection({
     document.addEventListener("mousedown", handleDocumentMouseDown);
     return () => document.removeEventListener("mousedown", handleDocumentMouseDown);
   }, [entryFoldersOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (carouselTimeoutRef.current) {
+        clearTimeout(carouselTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function iconToggleClass(active: boolean) {
     return [
@@ -758,6 +891,54 @@ export function StorageEntriesSection({
     }
   }
 
+  function openRelatedEntry(entry: EntryItem, direction: "left" | "right") {
+    if (selectedEntryId === entry.id || carouselSliding) {
+      return;
+    }
+
+    const currentCenterId = selectedEntryId;
+    setCarouselDirection(direction);
+    setCarouselSliding(true);
+
+    if (carouselTimeoutRef.current) {
+      clearTimeout(carouselTimeoutRef.current);
+    }
+
+    carouselTimeoutRef.current = setTimeout(() => {
+      setSelectedEntryId(entry.id);
+      if (currentCenterId !== null) {
+        if (direction === "right") {
+          setForcedLeftEntryId(currentCenterId);
+          setForcedRightEntryId(null);
+        } else {
+          setForcedRightEntryId(currentCenterId);
+          setForcedLeftEntryId(null);
+        }
+      }
+      setCarouselSliding(false);
+      setCarouselDirection(null);
+      carouselTimeoutRef.current = null;
+    }, 320);
+  }
+  const carouselTranslateClass = carouselSliding
+    ? carouselDirection === "left"
+      ? "translate-x-[300px]"
+      : carouselDirection === "right"
+        ? "-translate-x-[300px]"
+        : "translate-x-0"
+    : "translate-x-0";
+  const leftCardScaleClass = carouselSliding
+    ? carouselDirection === "left"
+      ? "scale-[1.02] opacity-100"
+      : "scale-[0.88] opacity-75"
+    : "scale-95 opacity-95";
+  const centerCardScaleClass = carouselSliding ? "scale-[0.93] opacity-90" : "scale-100 opacity-100";
+  const rightCardScaleClass = carouselSliding
+    ? carouselDirection === "right"
+      ? "scale-[1.02] opacity-100"
+      : "scale-[0.88] opacity-75"
+    : "scale-95 opacity-95";
+
   const showingEntries = foldersViewActive && selectedFolder ? selectedFolderEntries : filteredEntries;
 
   return (
@@ -886,7 +1067,11 @@ export function StorageEntriesSection({
                       ? "border-brand-500 ring-2 ring-brand-100"
                       : "border-brand-200 hover:bg-brand-50"
                   }`}
-                  onClick={() => setSelectedEntryId(entry.id)}
+                  onClick={() => {
+                    setForcedLeftEntryId(null);
+                    setForcedRightEntryId(null);
+                    setSelectedEntryId(entry.id);
+                  }}
                 >
                   <div className="pr-12">
                     <h3 className="break-words text-base font-extrabold leading-snug text-ink-900">{entry.title}</h3>
@@ -921,12 +1106,48 @@ export function StorageEntriesSection({
               aria-label={t("storage.detailTitle")}
               onClick={(event) => {
                 if (event.target === event.currentTarget) {
+                  setForcedLeftEntryId(null);
+                  setForcedRightEntryId(null);
                   setSelectedEntryId(null);
                 }
               }}
             >
-              <section className="w-full max-w-[560px] rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
-                <div className="mb-4 flex items-center justify-between gap-2">
+              <div className="w-full overflow-hidden">
+                <div
+                  className={`mx-auto flex w-full max-w-[1120px] items-center justify-center gap-3 transform-gpu transition-transform duration-300 ease-out ${carouselTranslateClass}`}
+                >
+                <button
+                  type="button"
+                  className={`hidden w-[220px] shrink-0 rounded-card border bg-white p-3 text-left shadow-card transform-gpu transition-all duration-300 ease-out lg:block ${leftCardScaleClass} ${
+                    leftRelatedEntry
+                      ? "border-brand-200 hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-lg active:scale-[0.99]"
+                      : "cursor-default border-brand-100 bg-brand-50/40 opacity-70"
+                  }`}
+                  onClick={() => {
+                    if (leftRelatedEntry) {
+                      openRelatedEntry(leftRelatedEntry, "left");
+                    }
+                  }}
+                  aria-label={leftRelatedEntry ? t("storage.openRelatedAria", { title: leftRelatedEntry.title }) : t("storage.noRelatedEntries")}
+                  disabled={!leftRelatedEntry || carouselSliding}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{t("storage.relatedLeft")}</p>
+                  {leftRelatedEntry ? (
+                    <>
+                      <h4 className="mt-1 break-words text-sm font-bold text-ink-900">{leftRelatedEntry.title}</h4>
+                      <p className="mt-2 break-words text-xs text-ink-700 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+                        {buildEntryText(leftRelatedEntry, t("entries.noContent"))}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-ink-600">{t("storage.noRelatedEntries")}</p>
+                  )}
+                </button>
+
+                <section
+                  className={`w-full max-w-[560px] shrink-0 rounded-card border border-brand-200 bg-white p-4 shadow-card transform-gpu transition-all duration-300 ease-out md:p-5 ${centerCardScaleClass}`}
+                >
+                  <div className="mb-4 flex items-center justify-between gap-2">
                   <h3 className="text-lg font-extrabold tracking-tight text-ink-900">
                     {t("storage.detailTitle")}
                   </h3>
@@ -945,7 +1166,11 @@ export function StorageEntriesSection({
                       type="button"
                       className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-rose-300 bg-white text-rose-700 transition hover:bg-rose-50"
                       aria-label={t("storage.closeDetailAria")}
-                      onClick={() => setSelectedEntryId(null)}
+                      onClick={() => {
+                        setForcedLeftEntryId(null);
+                        setForcedRightEntryId(null);
+                        setSelectedEntryId(null);
+                      }}
                     >
                       <XMarkIcon className="h-5 w-5" />
                     </button>
@@ -994,9 +1219,9 @@ export function StorageEntriesSection({
                       </section>
                     )}
                   </div>
-                </div>
+                  </div>
 
-                <div className="grid gap-3">
+                  <div className="grid gap-3">
                   <article className="flex items-start justify-between gap-3 rounded-control border border-brand-200 bg-white p-3">
                     <div className="min-w-0 w-full">
                       <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
@@ -1270,8 +1495,38 @@ export function StorageEntriesSection({
                     {detailSaveSuccess && (
                       <p className="text-sm font-semibold text-emerald-600">{detailSaveSuccess}</p>
                     )}
+                  </div>
+                </section>
+
+                <button
+                  type="button"
+                  className={`hidden w-[220px] shrink-0 rounded-card border bg-white p-3 text-left shadow-card transform-gpu transition-all duration-300 ease-out lg:block ${rightCardScaleClass} ${
+                    rightRelatedEntry
+                      ? "border-brand-200 hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-lg active:scale-[0.99]"
+                      : "cursor-default border-brand-100 bg-brand-50/40 opacity-70"
+                  }`}
+                  onClick={() => {
+                    if (rightRelatedEntry) {
+                      openRelatedEntry(rightRelatedEntry, "right");
+                    }
+                  }}
+                  aria-label={rightRelatedEntry ? t("storage.openRelatedAria", { title: rightRelatedEntry.title }) : t("storage.noRelatedEntries")}
+                  disabled={!rightRelatedEntry || carouselSliding}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{t("storage.relatedRight")}</p>
+                  {rightRelatedEntry ? (
+                    <>
+                      <h4 className="mt-1 break-words text-sm font-bold text-ink-900">{rightRelatedEntry.title}</h4>
+                      <p className="mt-2 break-words text-xs text-ink-700 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+                        {buildEntryText(rightRelatedEntry, t("entries.noContent"))}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-ink-600">{t("storage.noRelatedEntries")}</p>
+                  )}
+                </button>
                 </div>
-              </section>
+              </div>
             </div>
           )}
         </>
