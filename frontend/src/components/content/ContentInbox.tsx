@@ -311,7 +311,7 @@ export function ContentInbox({
     const resources: CreateEntryResourceInput[] = [];
     if (textContent) {
       resources.push({
-        type: "TEXT",
+        type: "RAW",
         textContent
       });
     }

@@ -40,7 +40,7 @@ export type CreateEntryResourceInput = {
 export type CreateEntryInput = {
   title: string;
   resources?: CreateEntryResourceInput[];
-  flag?: "TEXT" | "SPOTIFY" | "YOUTUBE";
+  flag?: "RAW" | "SPOTIFY" | "YOUTUBE";
   notification?: boolean;
   tagIds?: number[];
 };

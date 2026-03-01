@@ -68,8 +68,7 @@ function buildEntryText(entry: EntryItem, emptyText: string) {
   const textResources = entry.resources
     .filter(
       (resource) =>
-        (resource.type === "RAW" && !isChecklistResource(resource)) || resource.type === "TEXT"
-    )
+        (resource.type === "RAW" && !isChecklistResource(resource)))
     .map((resource) => resource.textContent?.trim() ?? "")
     .filter(Boolean);
 
@@ -484,7 +483,7 @@ function getEntryTwitchVideos(entry: EntryItem): TwitchVideoPreview[] {
       continue;
     }
 
-    if ((resource.type === "RAW" || resource.type === "TEXT") && resource.textContent) {
+    if ((resource.type === "RAW") && resource.textContent) {
       const matches = resource.textContent.match(TWITCH_URL_PATTERN);
       if (!matches) {
         continue;
@@ -738,8 +737,7 @@ export function StorageEntriesSection({
     return (
       selectedEntry.resources.find(
         (resource) =>
-          (resource.type === "RAW" && !isChecklistResource(resource)) || resource.type === "TEXT"
-      ) ?? null
+          (resource.type === "RAW" && !isChecklistResource(resource))) ?? null
     );
   }, [selectedEntry]);
   const selectedTodoListText = useMemo(() => {

@@ -4,7 +4,7 @@ export type TagItem = {
   createdAt: string;
 };
 
-export type ResourceType = "TEXT" | "RAW" | "LINK" | "MEDIA";
+export type ResourceType = "RAW" | "LINK" | "MEDIA";
 export type EntryFlag =
   | "RAW"
   | "YOUTUBE"

@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "PISITO Quick Inbox",
+  "description": "Abre el inbox de PISITO en un modal desde cualquier web.",
+  "version": "0.1.0",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [],
+  "host_permissions": [
+    "http://localhost:5173/*",
+    "http://localhost:4173/*"
+  ]
+}

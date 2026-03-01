@@ -102,7 +102,7 @@ Auth:
 
 - `Resource` (abstract parent)
   - `id`
-  - `type`: `TEXT | LINK | MEDIA`
+  - `type`: `RAW | LINK | MEDIA`
   - `title`
   - `createdAt`
 
@@ -130,7 +130,7 @@ Auth:
       "title": "Ideas de producto",
       "resources": [
         {
-          "type": "TEXT",
+          "type": "RAW",
           "title": "Nota inicial",
           "textContent": "Texto plano del usuario"
         },

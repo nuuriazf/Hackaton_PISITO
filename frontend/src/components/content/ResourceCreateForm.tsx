@@ -44,7 +44,7 @@ export function ResourceCreateForm({
         value={values.type}
         onChange={(event) => onChange({ type: event.target.value as ResourceType })}
       >
-        <option value="TEXT">{t("resourceType.raw")}</option>
+        <option value="RAW">{t("resourceType.raw")}</option>
         <option value="LINK">{t("resourceType.link")}</option>
         <option value="MEDIA">{t("resourceType.media")}</option>
       </select>
@@ -57,7 +57,7 @@ export function ResourceCreateForm({
         onChange={(event) => onChange({ title: event.target.value })}
       />
 
-      {(values.type === "RAW" || values.type === "TEXT") && (
+      {(values.type === "RAW") && (
         <textarea
           placeholder={t("resourceCreate.textPlaceholder")}
           className={textareaClass}
