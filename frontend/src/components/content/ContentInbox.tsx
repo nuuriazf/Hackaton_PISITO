@@ -29,6 +29,7 @@ import { ProfileLogoutButton } from "./profile/ProfileLogoutButton";
 import { ProfilePasswordForm } from "./profile/ProfilePasswordForm";
 import { ProfileUsernameForm } from "./profile/ProfileUsernameForm";
 import { StorageEntriesSection } from "./storage/StorageEntriesSection";
+import { RelationshipGraph } from "./relationship/RelationshipGraph";
 
 type ContentInboxProps = {
   username: string;
@@ -793,6 +794,8 @@ export function ContentInbox({
               entryToOpenId={entryToOpenFromNotifications}
               onEntryToOpenHandled={() => setEntryToOpenFromNotifications(null)}
             />
+          ) : activeSection === "relationshipGraph" ? (
+            <RelationshipGraph />
           ) : (
             <section className="rounded-card border border-brand-200 bg-white/95 p-8 text-center shadow-card md:p-10">
               <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink-900">
