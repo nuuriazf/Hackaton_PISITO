@@ -31,6 +31,7 @@ export const FR_MESSAGES: Record<I18nKey, string> = {
   "settings.ariaButton": "Paramètres",
   "notifications.ariaButton": "Notifications",
   "notifications.menuAria": "Panneau des notifications",
+  "notifications.empty": "Il n y a pas de notifications en attente.",
   "settings.menuAria": "Options de paramètres",
   "settings.title": "Paramètres",
   "settings.language": "Langue",
@@ -173,5 +174,11 @@ export const FR_MESSAGES: Record<I18nKey, string> = {
   "resourceType.link": "Lien",
   "resourceType.media": "Média",
   "resource.video": "Vidéo",
-  "resource.file": "Fichier"
+  "resource.file": "Fichier",
+  "storage.deleteEntryAria": "Supprimer la note",
+  "storage.deleteEntryError": "Impossible de supprimer cette note.",
+  "storage.deleteEntryConfirmTitle": "Supprimer la note ?",
+  "storage.deleteEntryConfirmMessage": "Cette action est irréversible. Voulez-vous la supprimer ?",
+  "storage.deleteEntryConfirmYes": "Oui, supprimer",
+  "storage.deleteEntryConfirmNo": "Non",
 };

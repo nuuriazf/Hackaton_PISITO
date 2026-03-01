@@ -354,7 +354,7 @@ public class EntryService {
         }
 
         if (!(resource instanceof TextResource textResource)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resource is not TEXT");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resource is not RAW");
         }
 
         textResource.setTitle(trimOrNull(request.getTitle()));
@@ -392,7 +392,7 @@ public class EntryService {
         }
 
         return switch (request.getType()) {
-            case RAW, TEXT -> {
+            case RAW -> {
                 TextResource resource = new TextResource();
                 resource.setTitle(trimOrNull(request.getTitle()));
                 resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required for RAW"));
@@ -445,6 +445,7 @@ public class EntryService {
             entry.getFlag(),
             resources,
             tags,
+            entry.getNotificationDate(),
             entry.getCreateDate(),
             entry.getUpdateDate()
         );
@@ -496,7 +497,7 @@ public class EntryService {
     }
 
     private static boolean isTextResourceType(ResourceType type) {
-        return type == ResourceType.RAW || type == ResourceType.TEXT;
+        return type == ResourceType.RAW || type == ResourceType.RAW;
     }
 
     private static String extractFileNameFromStorageKey(String storageKey) {

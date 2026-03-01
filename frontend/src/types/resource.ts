@@ -4,7 +4,7 @@ export type TagItem = {
   createdAt: string;
 };
 
-export type ResourceType = "TEXT" | "RAW" | "LINK" | "MEDIA";
+export type ResourceType = "RAW" | "LINK" | "MEDIA";
 export type EntryFlag =
   | "RAW"
   | "YOUTUBE"
@@ -33,6 +33,7 @@ export type EntryItem = {
   flag: EntryFlag | null;
   resources: ResourceItem[];
   tags: TagItem[];
+  notificationDate: string | null;
   createdAt: string;
   updatedAt: string;
 };

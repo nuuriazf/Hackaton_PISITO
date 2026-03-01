@@ -8,6 +8,7 @@ import { appCenterClass, appShellClass, panelClass } from "./components/ui/style
 import { useAuthSession } from "./hooks/useAuthSession";
 import { useI18n } from "./i18n/I18nProvider";
 import type { AuthCredentials } from "./types/auth";
+import { ContentExtensionWidget } from "./components/content/ContentExtensionWidget";
 
 function App() {
   const { t } = useI18n();
@@ -210,6 +211,18 @@ function App() {
               />
             ) : (
               <Navigate to="/" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/extension-widget"
+          element={
+            auth.authUser ? (
+              <ContentExtensionWidget onLogout={auth.logout} />
+            ) : (
+              // Si no está logueado, le mostramos el login normal
+              <Navigate to="/" replace /> 
             )
           }
         />

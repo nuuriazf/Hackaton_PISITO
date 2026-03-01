@@ -12,7 +12,7 @@ public class TextResource extends Resource {
     private String textContent;
 
     public TextResource() {
-        setType(ResourceType.TEXT);
+        setType(ResourceType.RAW);
     }
 
     public String getTextContent() {

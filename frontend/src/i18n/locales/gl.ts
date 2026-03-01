@@ -31,6 +31,7 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "settings.ariaButton": "Configuración",
   "notifications.ariaButton": "Notificacións",
   "notifications.menuAria": "Panel de notificacións",
+  "notifications.empty": "Non hai notificacións pendentes.",
   "settings.menuAria": "Opcións de configuración",
   "settings.title": "Configuración",
   "settings.language": "Idioma",
@@ -173,5 +174,11 @@ export const GL_MESSAGES: Record<I18nKey, string> = {
   "resourceType.link": "Ligazón",
   "resourceType.media": "Arquivo",
   "resource.video": "Video",
-  "resource.file": "Arquivo"
+  "resource.file": "Arquivo",
+  "storage.deleteEntryAria": "Eliminar nota",
+  "storage.deleteEntryError": "Non puidemos eliminar esta nota.",
+  "storage.deleteEntryConfirmTitle": "Eliminar nota?",
+  "storage.deleteEntryConfirmMessage": "Esta acción non se pode desfacer. Queres eliminala?",
+  "storage.deleteEntryConfirmYes": "Si, eliminar",
+  "storage.deleteEntryConfirmNo": "Non",
 };

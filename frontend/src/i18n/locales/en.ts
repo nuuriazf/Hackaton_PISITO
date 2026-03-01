@@ -31,6 +31,7 @@ export const EN_MESSAGES: Record<I18nKey, string> = {
   "settings.ariaButton": "Settings",
   "notifications.ariaButton": "Notifications",
   "notifications.menuAria": "Notifications panel",
+  "notifications.empty": "There are no pending notifications.",
   "settings.menuAria": "Settings options",
   "settings.title": "Settings",
   "settings.language": "Language",
@@ -173,5 +174,11 @@ export const EN_MESSAGES: Record<I18nKey, string> = {
   "resourceType.link": "Link",
   "resourceType.media": "Media",
   "resource.video": "Video",
-  "resource.file": "File"
+  "resource.file": "File",
+  "storage.deleteEntryAria": "Delete entry",
+  "storage.deleteEntryError": "We could not delete this entry.",
+  "storage.deleteEntryConfirmTitle": "Delete entry?",
+  "storage.deleteEntryConfirmMessage": "This action cannot be undone. Do you want to delete it?",
+  "storage.deleteEntryConfirmYes": "Yes, delete",
+  "storage.deleteEntryConfirmNo": "No"
 };

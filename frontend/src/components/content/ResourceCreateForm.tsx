@@ -57,7 +57,7 @@ export function ResourceCreateForm({
         onChange={(event) => onChange({ title: event.target.value })}
       />
 
-      {(values.type === "RAW" || values.type === "TEXT") && (
+      {(values.type === "RAW") && (
         <textarea
           placeholder={t("resourceCreate.textPlaceholder")}
           className={textareaClass}
