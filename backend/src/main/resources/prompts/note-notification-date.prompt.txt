@@ -25,8 +25,6 @@ Reglas concretas:
 - Dias de semana:
   - "martes", "para martes", "el martes", "proximo martes", "martes que viene" => proximo martes futuro.
   - "este martes" => si no paso todavia, ese martes; si ya paso, el siguiente.
-- Mes:
-   - A no ser que se especifique el mes (Enero, febrero, marzo, ...), solo busca el siguiente día que corresponda del siguiente mes
 - Relativos:
   - hoy -> fecha de NOW
   - manana -> NOW + 1 dia

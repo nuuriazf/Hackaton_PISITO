@@ -42,6 +42,7 @@ export const ES_MESSAGES = {
   "footer.profile": "Perfil",
   "section.explore": "Explorar",
   "section.storage": "Biblioteca",
+  "section.inbox": "¿Qué quieres recordar?",
   "section.relationshipGraph": "Grafo de relaciones",
   "section.inProgress": "Sección en preparación",
   "storage.searchLabel": "Buscar entries",

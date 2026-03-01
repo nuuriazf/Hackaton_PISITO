@@ -18,7 +18,7 @@ export function SuccessToast({ message, visible }: SuccessToastProps) {
       role="status"
       aria-live="polite"
     >
-      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-emerald-600">
+      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/25 backdrop-blur-sm text-emerald-600">
         <SuccessCheckCircleIcon className="h-4 w-4" />
       </span>
       <span>{message}</span>

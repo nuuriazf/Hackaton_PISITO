@@ -8,6 +8,8 @@ import type { AppLanguage, I18nKey } from "../../i18n/messages";
 import type { UpdatePasswordInput, UpdateUsernameInput } from "../../types/auth";
 import type { CreateEntryResourceInput, EntryItem, EntryFlag } from "../../types/resource";
 import { readErrorMessage } from "../../utils/error";
+import LogoyTextoFunil from "../../assets/LogoyTextoFunil.svg";
+import "../../styles/tailwind.css";
 import {
   Cog6ToothIcon,
   InboxArrowDownIcon,
@@ -21,6 +23,7 @@ import {
 } from "../ui/icons";
 import { errorTextClass } from "../ui/styles";
 import { SuccessToast } from "../ui/SuccessToast";
+import { GlassCard } from "../ui/GlassCard";
 import {
   InboxEntryCreateForm,
   type InboxEntryFormValues
@@ -82,7 +85,9 @@ function footerButtonClass(active: boolean, withRightBorder: boolean) {
   return [
     footerButtonBaseClass,
     withRightBorder ? "border-r border-brand-200" : "",
-    active ? "bg-brand-200 text-brand-800" : "bg-white/85 text-ink-700 hover:bg-brand-100"
+    active
+      ? "bg-[#111827] text-white"
+      : "bg-white/85 text-ink-700 hover:border-[rgba(255,255,255,0.3)] hover:bg-[rgba(170,170,170,0.52)] hover:text-ink-900 hover:backdrop-blur-[20px] hover:shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_6px_3px_rgba(255,255,255,0.3)]"
   ]
     .filter(Boolean)
     .join(" ");
@@ -90,7 +95,7 @@ function footerButtonClass(active: boolean, withRightBorder: boolean) {
 
 const SECTION_PATH_MAP: Record<InboxSection, string> = {
   explore: "/explore",
-  storage: "/library",
+  storage: "/storage",
   inbox: "/inbox",
   relationshipGraph: "/relationship-graph",
   profile: "/profile"
@@ -102,6 +107,8 @@ const SECTION_TITLE_KEY_MAP: Record<Exclude<InboxSection, "inbox" | "profile">, 
   relationshipGraph: "section.relationshipGraph"
 };
 
+const fondoCentroBackgroundUrl = new URL("../../assets/fondocentro.jpg", import.meta.url).href;
+
 function sectionFromPath(pathname: string): InboxSection {
   if (pathname === "/profile") {
     return "profile";
@@ -111,7 +118,7 @@ function sectionFromPath(pathname: string): InboxSection {
     return "explore";
   }
 
-  if (pathname === "/library") {
+  if (pathname === "/library" || pathname === "/storage") {
     return "storage";
   }
 
@@ -135,9 +142,7 @@ export function ContentInbox({
   const location = useLocation();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<InboxSection>(sectionFromPath(location.pathname));
-  const [inboxEntryForm, setInboxEntryForm] = useState<InboxEntryFormValues>(
-    INITIAL_INBOX_ENTRY_FORM
-  );
+  const [inboxEntryForm, setInboxEntryForm] = useState<InboxEntryFormValues>(INITIAL_INBOX_ENTRY_FORM);
   const [inboxSubmitting, setInboxSubmitting] = useState(false);
   const [inboxError, setInboxError] = useState<string | null>(null);
   const [inboxMessage, setInboxMessage] = useState<string | null>(null);
@@ -267,23 +272,20 @@ export function ContentInbox({
     const textContent = inboxEntryForm.textContent.trim();
     const activeFlag = resolveEntryFlag(inboxEntryForm);
 
-    if (activeFlag === "YOUTUBE") {
-      if (!textContent) {
-        setInboxError(t("entries.youtubeRequired"));
-        return;
-      }
+    if (activeFlag === "YOUTUBE" && !textContent) {
+      setInboxError(t("entries.youtubeRequired"));
+      return;
     }
-    if (activeFlag === "TWITCH") {
-      if (!textContent) {
-        setInboxError(t("entries.twitchRequired"));
-        return;
-      }
+
+    if (activeFlag === "TWITCH" && !textContent) {
+      setInboxError(t("entries.twitchRequired"));
+      return;
     }
 
     const resources: CreateEntryResourceInput[] = [];
     if (textContent) {
       resources.push({
-        type: "TEXT",
+        type: "RAW",
         textContent
       });
     }
@@ -311,6 +313,7 @@ export function ContentInbox({
         flag: activeFlag,
         notification: inboxEntryForm.alarmEnabled
       });
+
       console.log("[createEntry] payload", {
         title: title || undefined,
         resources,
@@ -440,355 +443,371 @@ export function ContentInbox({
   }
 
   return (
-    <section className="relative h-screen overflow-hidden bg-gradient-to-br from-brand-100 via-brand-50 to-brand-200">
-      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-brand-200 bg-white/90 px-4 backdrop-blur-sm sm:px-6">
-        <h1 className="text-lg font-extrabold tracking-tight text-ink-900">{t("app.name")}</h1>
-        <div className="relative flex items-center gap-2" ref={headerMenusRef}>
-          <div className="relative">
+    <section
+      className="h-screen w-full overflow-hidden bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${fondoCentroBackgroundUrl})` }}
+    >
+      <section className="relative h-full w-full overflow-hidden bg-transparent">
+        <header className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-brand-200 bg-white/25 px-4 backdrop-blur-sm sm:px-6">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center"
+            aria-label={t("footer.inbox")}
+            onClick={() => changeSection("inbox")}
+          >
+            <img
+              src={LogoyTextoFunil}
+              alt={t("app.name")}
+              className="h-[52.12px] w-[84px]"
+              draggable={false}
+              onDragStart={(event) => event.preventDefault()}
+            />
+          </button>
+
+          <nav className="mx-auto flex w-3/4 items-center justify-center gap-3">
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white text-brand-700 transition hover:bg-brand-100"
-              aria-label={t("notifications.ariaButton")}
-              aria-haspopup="menu"
-              aria-expanded={notificationsOpen}
-              onClick={() => {
-                setNotificationsOpen((current) => !current);
-                setSettingsOpen(false);
-              }}
+              className={`inline-flex h-10 w-24 shrink-0 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                activeSection === "explore"
+                  ? "bg-[#111827] text-white rounded-lg"
+                  : "text-ink-700 hover:bg-[rgba(170,170,170,0.52)] hover:text-ink-900 hover:backdrop-blur-[20px] hover:shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_6px_3px_rgba(255,255,255,0.3)]"
+              }`}
+              onClick={() => changeSection("explore")}
+              aria-label={t("footer.explore")}
             >
-              <NotificationBellIcon className="h-6 w-6" />
+              <MagnifyingGlassIcon className="h-6 w-6" />
             </button>
-
-            {notificationsOpen && (
-              <section
-                className="absolute right-0 top-[calc(100%+10px)] z-40 h-28 w-56 rounded-card border border-brand-200 bg-white/95 p-3 shadow-card backdrop-blur-sm"
-                role="menu"
-                aria-label={t("notifications.menuAria")}
-              />
-            )}
-          </div>
-
-          <div className="relative">
+            <div className="h-8 w-px shrink-0 bg-gray-700" />
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white text-brand-700 transition hover:bg-brand-100"
-              aria-label={t("settings.ariaButton")}
-              aria-haspopup="menu"
-              aria-expanded={settingsOpen}
-              onClick={() => {
-                setSettingsOpen((current) => !current);
-                setNotificationsOpen(false);
-              }}
+              className={`inline-flex h-10 w-24 shrink-0 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                activeSection === "storage"
+                  ? "bg-[#111827] text-white rounded-lg"
+                  : "text-ink-700 hover:bg-[rgba(170,170,170,0.52)] hover:text-ink-900 hover:backdrop-blur-[20px] hover:shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_6px_3px_rgba(255,255,255,0.3)]"
+              }`}
+              onClick={() => changeSection("storage")}
+              aria-label={t("footer.storage")}
             >
-              <Cog6ToothIcon className="h-6 w-6" />
+              <StorageIcon className="h-6 w-6" />
             </button>
+            <div className="h-8 w-px shrink-0 bg-gray-700" />
+            <button
+              type="button"
+              className={`inline-flex h-10 w-24 shrink-0 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                activeSection === "inbox"
+                  ? "bg-[#111827] text-white rounded-lg"
+                  : "text-ink-700 hover:bg-[rgba(170,170,170,0.52)] hover:text-ink-900 hover:backdrop-blur-[20px] hover:shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_6px_3px_rgba(255,255,255,0.3)]"
+              }`}
+              onClick={() => changeSection("inbox")}
+              aria-label={t("footer.inbox")}
+            >
+              <InboxArrowDownIcon className="h-6 w-6" />
+            </button>
+            <div className="h-8 w-px shrink-0 bg-gray-700" />
+            <button
+              type="button"
+              className={`inline-flex h-10 w-24 shrink-0 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                activeSection === "relationshipGraph"
+                  ? "bg-[#111827] text-white rounded-lg"
+                  : "text-ink-700 hover:bg-[rgba(170,170,170,0.52)] hover:text-ink-900 hover:backdrop-blur-[20px] hover:shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_6px_3px_rgba(255,255,255,0.3)]"
+              }`}
+              onClick={() => changeSection("relationshipGraph")}
+              aria-label={t("footer.relationshipGraph")}
+            >
+              <RelationshipGraphIcon className="h-6 w-6" />
+            </button>
+            <div className="h-8 w-px shrink-0 bg-gray-700" />
+            <button
+              type="button"
+              className={`inline-flex h-10 w-24 shrink-0 items-center justify-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                activeSection === "profile"
+                  ? "bg-[#111827] text-white rounded-lg"
+                  : "text-ink-700 hover:bg-[rgba(170,170,170,0.52)] hover:text-ink-900 hover:backdrop-blur-[20px] hover:shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_6px_3px_rgba(255,255,255,0.3)]"
+              }`}
+              onClick={() => changeSection("profile")}
+              aria-label={t("footer.profile")}
+            >
+              <UserIcon className="h-6 w-6" />
+            </button>
+          </nav>
 
-            {settingsOpen && (
-              <section
-                className="absolute right-0 top-[calc(100%+10px)] z-40 w-56 rounded-card border border-brand-200 bg-white/95 p-3 shadow-card backdrop-blur-sm"
-                role="menu"
-                aria-label={t("settings.menuAria")}
+          <div className="relative flex items-center gap-2" ref={headerMenusRef}>
+            <div className="relative">
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white/25 text-brand-700 transition hover:bg-[rgba(17,157,164,0.65)]"
+                aria-label={t("notifications.ariaButton")}
+                aria-haspopup="menu"
+                aria-expanded={notificationsOpen}
+                onClick={() => {
+                  setNotificationsOpen((current) => !current);
+                  setSettingsOpen(false);
+                }}
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                  {t("settings.title")}
-                </p>
+                <NotificationBellIcon className="h-6 w-6" />
+              </button>
 
-                <div className="mt-3">
-                  <p className="text-sm font-bold text-ink-900">{t("settings.language")}</p>
-                  <div className="mt-2 grid gap-1">
-                    {LANGUAGE_OPTIONS.map((languageOption) => {
-                      const selected = appLanguage === languageOption;
-                      return (
-                        <button
-                          key={languageOption}
-                          type="button"
-                          className={`flex items-center justify-between rounded-control border px-2.5 py-2 text-sm font-semibold transition ${
-                            selected
-                              ? "border-brand-400 bg-brand-100 text-brand-800"
-                              : "border-brand-200 bg-white text-ink-700 hover:bg-brand-50"
-                          }`}
-                          role="menuitemradio"
-                          aria-checked={selected}
-                          onClick={() => {
-                            setAppLanguage(languageOption);
-                            setSettingsOpen(false);
-                          }}
-                        >
-                          <span>{t(`settings.language.${languageOption}` as I18nKey)}</span>
-                          {selected ? <span className="text-xs text-brand-700">{t("settings.current")}</span> : null}
-                        </button>
-                      );
-                    })}
+              {notificationsOpen && (
+                <section
+                  className="absolute right-0 top-[calc(100%+10px)] z-40 h-28 w-56 rounded-card border border-brand-200 bg-white/25 p-3 shadow-card backdrop-blur-sm"
+                  role="menu"
+                  aria-label={t("notifications.menuAria")}
+                />
+              )}
+            </div>
+
+            <div className="relative">
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 bg-white/25 text-brand-700 transition hover:bg-[rgba(17,157,164,0.65)]"
+                aria-label={t("settings.ariaButton")}
+                aria-haspopup="menu"
+                aria-expanded={settingsOpen}
+                onClick={() => {
+                  setSettingsOpen((current) => !current);
+                  setNotificationsOpen(false);
+                }}
+              >
+                <Cog6ToothIcon className="h-6 w-6" />
+              </button>
+
+              {settingsOpen && (
+                <section
+                  className="absolute right-0 top-[calc(100%+10px)] z-40 w-56 rounded-card border border-brand-200 bg-white/25 p-3 shadow-card backdrop-blur-sm"
+                  role="menu"
+                  aria-label={t("settings.menuAria")}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                    {t("settings.title")}
+                  </p>
+
+                  <div className="mt-3">
+                    <p className="text-sm font-bold text-ink-900">{t("settings.language")}</p>
+                    <div className="mt-2 grid gap-1">
+                      {LANGUAGE_OPTIONS.map((languageOption) => {
+                        const selected = appLanguage === languageOption;
+                        return (
+                          <button
+                            key={languageOption}
+                            type="button"
+                            className={`flex items-center justify-between rounded-control border px-2.5 py-2 text-sm font-semibold transition ${
+                              selected
+                                ? "border-brand-400 bg-brand-100 text-brand-800"
+                                : "border-brand-200 bg-white/25 text-ink-700 hover:bg-brand-50"
+                            }`}
+                            role="menuitemradio"
+                            aria-checked={selected}
+                            onClick={() => {
+                              setAppLanguage(languageOption);
+                              setSettingsOpen(false);
+                            }}
+                          >
+                            <span>{t(`settings.language.${languageOption}` as I18nKey)}</span>
+                            {selected ? (
+                              <span className="text-xs text-brand-700">{t("settings.current")}</span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                </section>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className={`scrollbar-brand absolute inset-x-0 bottom-0 top-16 z-10 overflow-y-auto ${activeSection === "storage" ? "" : "px-4 py-4 sm:px-6"}`}>
+          <div className={`mx-auto w-full max-w-[940px] ${activeSection === "storage" ? "h-full" : "origin-top scale-[1.08] py-2"}`}>
+            {activeSection === "profile" ? (
+              <section className="flex w-full flex-col gap-4">
+                <GlassCard className="p-5 md:p-6">
+                  <div className="mb-4">
+                    <h2 className="heading-title text-center text-ink-900">
+                      {t("profile.title")}
+                    </h2>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <div className="flex items-center justify-between rounded-control border border-brand-200 bg-white/25 p-3">
+                      <div className="grid gap-0.5">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                          {t("profile.username")}
+                        </p>
+                        <p className="text-base font-bold text-ink-900">{username}</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-[rgba(12,116,137,0.65)]"
+                        aria-label={t("profile.editUsernameAria")}
+                        onClick={() => openProfileForm("username")}
+                      >
+                        <PencilSquareIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-control border border-brand-200 bg-white/25 p-3">
+                      <div className="grid gap-0.5">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                          {t("profile.password")}
+                        </p>
+                        <p className="text-base font-bold text-ink-900">********</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-[rgba(12,116,137,0.65)]"
+                        aria-label={t("profile.editPasswordAria")}
+                        onClick={() => openProfileForm("password")}
+                      >
+                        <PencilSquareIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </GlassCard>
+
+                {activeProfileForm === "username" && (
+                  <GlassCard className="p-5 md:p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="heading-title text-ink-900">
+                        {t("profile.changeUsernameTitle")}
+                      </h2>
+                      <button
+                        type="button"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
+                        aria-label={t("profile.hideChangeUsernameAria")}
+                        onClick={closeProfileForm}
+                      >
+                        <XMarkIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <ProfileUsernameForm
+                      usernameValue={usernameDraft}
+                      currentPasswordValue={usernameCurrentPassword}
+                      submitting={submitting}
+                      onSubmit={handleUpdateUsername}
+                      onUsernameChange={(value) => {
+                        setUsernameDraft(value);
+                        onClearError();
+                        setUsernameValidationError(null);
+                        setUsernameMessage(null);
+                      }}
+                      onCurrentPasswordChange={(value) => {
+                        setUsernameCurrentPassword(value);
+                        onClearError();
+                        setUsernameValidationError(null);
+                        setUsernameMessage(null);
+                      }}
+                    />
+
+                    {usernameValidationError && (
+                      <p className={errorTextClass}>
+                        {t("common.errorPrefix", { message: t(usernameValidationError) })}
+                      </p>
+                    )}
+                    {error && activeProfileForm === "username" && (
+                      <p className={errorTextClass}>
+                        {t("common.errorPrefix", { message: error })}
+                      </p>
+                    )}
+                  </GlassCard>
+                )}
+
+                {activeProfileForm === "password" && (
+                  <GlassCard className="p-5 md:p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="heading-title text-ink-900">
+                        {t("profile.changePasswordTitle")}
+                      </h2>
+                      <button
+                        type="button"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
+                        aria-label={t("profile.hideChangePasswordAria")}
+                        onClick={closeProfileForm}
+                      >
+                        <XMarkIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <ProfilePasswordForm
+                      currentPasswordValue={passwordCurrent}
+                      newPasswordValue={passwordNext}
+                      submitting={submitting}
+                      onSubmit={handleUpdatePassword}
+                      onCurrentPasswordChange={(value) => {
+                        setPasswordCurrent(value);
+                        onClearError();
+                        setPasswordValidationError(null);
+                        setPasswordMessage(null);
+                      }}
+                      onNewPasswordChange={(value) => {
+                        setPasswordNext(value);
+                        onClearError();
+                        setPasswordValidationError(null);
+                        setPasswordMessage(null);
+                      }}
+                    />
+
+                    {passwordValidationError && (
+                      <p className={errorTextClass}>
+                        {t("common.errorPrefix", { message: t(passwordValidationError) })}
+                      </p>
+                    )}
+                    {error && activeProfileForm === "password" && (
+                      <p className={errorTextClass}>
+                        {t("common.errorPrefix", { message: error })}
+                      </p>
+                    )}
+                  </GlassCard>
+                )}
+
+                <section className="mt-auto">
+                  <ProfileLogoutButton onLogout={onLogout} />
+                </section>
               </section>
+            ) : activeSection === "inbox" ? (
+              <InboxEntryCreateForm
+                values={inboxEntryForm}
+                submitting={inboxSubmitting}
+                error={inboxError}
+                heading={t("section.inbox")}
+                onSubmit={handleCreateInboxEntry}
+                onChange={patchInboxEntryForm}
+              />
+            ) : activeSection === "storage" ? (
+              <StorageEntriesSection
+                entries={storageEntries}
+                loading={storageLoading}
+                error={storageError}
+                searchValue={storageSearchValue}
+                onSearchChange={setStorageSearchValue}
+                onEntriesUpdated={loadStorageEntries}
+                onUnauthorized={onLogout}
+              />
+            ) : activeSection === "relationshipGraph" ? (
+              <GlassCard className="p-8 text-center md:p-10">
+                <div className="grid place-items-center gap-2.5">
+                  <RelationshipGraphIcon className="h-8 w-8" />
+                  <h2 className="heading-title text-center text-[#111827]">
+                    {t(SECTION_TITLE_KEY_MAP[activeSection])}
+                  </h2>
+                  <p className="text-sm font-medium text-[#111827]">{t("section.inProgress")}</p>
+                </div>
+              </GlassCard>
+            ) : (
+              <GlassCard className="p-8 text-center md:p-10">
+                <h2 className="heading-title text-center text-[#111827]">
+                  {t(SECTION_TITLE_KEY_MAP[activeSection])}
+                </h2>
+                <p className="mt-3 text-sm font-medium text-[#111827]">{t("section.inProgress")}</p>
+              </GlassCard>
             )}
           </div>
-        </div>
-      </header>
+        </main>
 
-      <section className="fixed inset-x-0 top-16 z-20 hidden border-b border-brand-200 bg-white/90 backdrop-blur-sm md:block">
-        <div className="flex h-16 w-full px-4 sm:px-6">
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "explore", true)}
-            onClick={() => changeSection("explore")}
-            aria-label={t("footer.explore")}
-          >
-            <MagnifyingGlassIcon className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "storage", true)}
-            onClick={() => changeSection("storage")}
-            aria-label={t("footer.storage")}
-          >
-            <StorageIcon className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "inbox", true)}
-            onClick={() => changeSection("inbox")}
-            aria-label={t("footer.inbox")}
-          >
-            <InboxArrowDownIcon className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "relationshipGraph", true)}
-            onClick={() => changeSection("relationshipGraph")}
-            aria-label={t("footer.relationshipGraph")}
-          >
-            <RelationshipGraphIcon className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "profile", false)}
-            onClick={() => changeSection("profile")}
-            aria-label={t("footer.profile")}
-          >
-            <UserIcon className="h-7 w-7" />
-          </button>
-        </div>
+        <SuccessToast message={successToastMessage} visible={toastVisible} />
       </section>
-
-      <main className="scrollbar-brand absolute inset-x-0 bottom-16 top-16 overflow-y-auto px-4 py-4 sm:px-6 md:bottom-0 md:top-32">
-        <div className="mx-auto w-full max-w-[840px] py-2">
-          {activeSection === "profile" ? (
-            <section className="flex w-full flex-col gap-4">
-              <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
-                <div className="mb-4">
-                  <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink-900">
-                    {t("profile.title")}
-                  </h2>
-                </div>
-                <div className="grid gap-3">
-                  <div className="flex items-center justify-between rounded-control border border-brand-200 bg-white p-3">
-                    <div className="grid gap-0.5">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                        {t("profile.username")}
-                      </p>
-                      <p className="text-base font-bold text-ink-900">{username}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-brand-100"
-                      aria-label={t("profile.editUsernameAria")}
-                      onClick={() => openProfileForm("username")}
-                    >
-                      <PencilSquareIcon className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-control border border-brand-200 bg-white p-3">
-                    <div className="grid gap-0.5">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                        {t("profile.password")}
-                      </p>
-                      <p className="text-base font-bold text-ink-900">********</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-brand-200 text-brand-700 transition hover:bg-brand-100"
-                      aria-label={t("profile.editPasswordAria")}
-                      onClick={() => openProfileForm("password")}
-                    >
-                      <PencilSquareIcon className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              </section>
-
-              {activeProfileForm === "username" && (
-                <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-extrabold tracking-tight text-ink-900">
-                      {t("profile.changeUsernameTitle")}
-                    </h2>
-                    <button
-                      type="button"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
-                      aria-label={t("profile.hideChangeUsernameAria")}
-                      onClick={closeProfileForm}
-                    >
-                      <XMarkIcon className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  <ProfileUsernameForm
-                    usernameValue={usernameDraft}
-                    currentPasswordValue={usernameCurrentPassword}
-                    submitting={submitting}
-                    onSubmit={handleUpdateUsername}
-                    onUsernameChange={(value) => {
-                      setUsernameDraft(value);
-                      onClearError();
-                      setUsernameValidationError(null);
-                      setUsernameMessage(null);
-                    }}
-                    onCurrentPasswordChange={(value) => {
-                      setUsernameCurrentPassword(value);
-                      onClearError();
-                      setUsernameValidationError(null);
-                      setUsernameMessage(null);
-                    }}
-                  />
-
-                  {usernameValidationError && (
-                    <p className={errorTextClass}>{t("common.errorPrefix", { message: t(usernameValidationError) })}</p>
-                  )}
-                  {error && activeProfileForm === "username" && (
-                    <p className={errorTextClass}>{t("common.errorPrefix", { message: error })}</p>
-                  )}
-                </section>
-              )}
-
-              {activeProfileForm === "password" && (
-                <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-extrabold tracking-tight text-ink-900">
-                      {t("profile.changePasswordTitle")}
-                    </h2>
-                    <button
-                      type="button"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-rose-300 text-rose-700 transition hover:bg-rose-50"
-                      aria-label={t("profile.hideChangePasswordAria")}
-                      onClick={closeProfileForm}
-                    >
-                      <XMarkIcon className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  <ProfilePasswordForm
-                    currentPasswordValue={passwordCurrent}
-                    newPasswordValue={passwordNext}
-                    submitting={submitting}
-                    onSubmit={handleUpdatePassword}
-                    onCurrentPasswordChange={(value) => {
-                      setPasswordCurrent(value);
-                      onClearError();
-                      setPasswordValidationError(null);
-                      setPasswordMessage(null);
-                    }}
-                    onNewPasswordChange={(value) => {
-                      setPasswordNext(value);
-                      onClearError();
-                      setPasswordValidationError(null);
-                      setPasswordMessage(null);
-                    }}
-                  />
-
-                  {passwordValidationError && (
-                    <p className={errorTextClass}>{t("common.errorPrefix", { message: t(passwordValidationError) })}</p>
-                  )}
-                  {error && activeProfileForm === "password" && (
-                    <p className={errorTextClass}>{t("common.errorPrefix", { message: error })}</p>
-                  )}
-                </section>
-              )}
-
-              <section className="mt-auto">
-                <ProfileLogoutButton onLogout={onLogout} />
-              </section>
-            </section>
-          ) : activeSection === "inbox" ? (
-            <InboxEntryCreateForm
-              values={inboxEntryForm}
-              submitting={inboxSubmitting}
-              error={inboxError}
-              heading="Inbox"
-              onSubmit={handleCreateInboxEntry}
-              onChange={patchInboxEntryForm}
-            />
-          ) : activeSection === "storage" ? (
-            <StorageEntriesSection
-              entries={storageEntries}
-              loading={storageLoading}
-              error={storageError}
-              searchValue={storageSearchValue}
-              onSearchChange={setStorageSearchValue}
-              onEntriesUpdated={loadStorageEntries}
-              onUnauthorized={onLogout}
-            />
-          ) : (
-            <section className="rounded-card border border-brand-200 bg-white/95 p-8 text-center shadow-card md:p-10">
-              <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink-900">
-                {t(SECTION_TITLE_KEY_MAP[activeSection])}
-              </h2>
-              <p className="mt-3 text-sm font-medium text-ink-600">{t("section.inProgress")}</p>
-            </section>
-          )}
-        </div>
-      </main>
-
-      <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-200 bg-white/90 backdrop-blur-sm md:hidden">
-        <div className="flex h-16 w-full">
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "explore", true)}
-            onClick={() => changeSection("explore")}
-            aria-label={t("footer.explore")}
-          >
-            <MagnifyingGlassIcon className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "storage", true)}
-            onClick={() => changeSection("storage")}
-            aria-label={t("footer.storage")}
-          >
-            <StorageIcon className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "inbox", true)}
-            onClick={() => changeSection("inbox")}
-            aria-label={t("footer.inbox")}
-          >
-            <InboxArrowDownIcon className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "relationshipGraph", true)}
-            onClick={() => changeSection("relationshipGraph")}
-            aria-label={t("footer.relationshipGraph")}
-          >
-            <RelationshipGraphIcon className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            className={footerButtonClass(activeSection === "profile", false)}
-            onClick={() => changeSection("profile")}
-            aria-label={t("footer.profile")}
-          >
-            <UserIcon className="h-7 w-7" />
-          </button>
-        </div>
-      </footer>
-
-      <SuccessToast message={successToastMessage} visible={toastVisible} />
     </section>
   );
 }
-
 

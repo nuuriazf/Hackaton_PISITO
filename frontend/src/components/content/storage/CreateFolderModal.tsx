@@ -53,8 +53,8 @@ export function CreateFolderModal({
         }
       }}
     >
-      <section className="w-full max-w-[420px] rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
-        <h3 className="text-lg font-extrabold tracking-tight text-ink-900">
+      <section className="w-full max-w-[420px] glass-card p-4 shadow-card md:p-5">
+        <h3 className="heading-title text-ink-900">
           {t("storage.createFolderModalTitle")}
         </h3>
 

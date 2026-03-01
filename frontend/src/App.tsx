@@ -157,6 +157,24 @@ function App() {
             )
           }
         />
+        <Route
+          path="/storage"
+          element={
+            auth.authUser ? (
+              <ContentInbox
+                username={auth.authUser.username}
+                submitting={auth.authSubmitting}
+                error={auth.authError}
+                onUpdateUsername={auth.updateUsernameUser}
+                onUpdatePassword={auth.updatePasswordUser}
+                onClearError={auth.clearAuthError}
+                onLogout={auth.logout}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
 
         <Route
           path="/relationship-graph"

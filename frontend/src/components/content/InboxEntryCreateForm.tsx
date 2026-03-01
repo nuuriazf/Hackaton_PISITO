@@ -8,12 +8,12 @@ import {
   LinkIcon,
   ListBulletIcon,
   MusicalNoteIcon,
-  SurveyIcon,
   TableIcon,
   TwitchIcon,
   YoutubeIcon
 } from "../ui/icons";
 import { errorTextClass, fieldLabelClass, inputClass, textareaClass } from "../ui/styles";
+import spotyIcon from "../../assets/spoty.png";
 
 type PrimaryInboxOption =
   | "youtube"
@@ -22,8 +22,7 @@ type PrimaryInboxOption =
   | "link"
   | "table"
   | "enumeration"
-  | "checklist"
-  | "survey";
+  | "checklist";
 
 export type InboxEntryFormValues = {
   title: string;
@@ -44,10 +43,10 @@ type InboxEntryCreateFormProps = {
 
 function toggleButtonClass(active: boolean) {
   return [
-    "flex h-11 w-full items-center justify-center rounded-control border transition sm:w-11",
+    "glass-surface flex h-11 w-full items-center justify-center border transition sm:w-11",
     active
-      ? "border-brand-500 bg-brand-500 text-white shadow-sm"
-      : "border-brand-200 bg-white text-brand-700 hover:bg-brand-50"
+      ? "border-white bg-black/20 text-[#111827] shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+      : "text-[#111827] hover:bg-white/20"
   ].join(" ");
 }
 
@@ -71,7 +70,7 @@ function IconToggleButton({ label, active, disabled = false, onClick, children }
       >
         {children}
       </button>
-      <span className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-[calc(100%+6px)] whitespace-nowrap rounded-md bg-ink-900 px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 peer-hover:opacity-100 peer-focus-visible:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-0 z-[200] -translate-x-1/2 -translate-y-[calc(100%+6px)] whitespace-nowrap glass-container px-2 py-1 text-xs font-semibold text-ink-900 opacity-0 shadow-sm transition-opacity duration-150 peer-hover:opacity-100 peer-focus-visible:opacity-100">
         {label}
       </span>
     </div>
@@ -165,47 +164,41 @@ export function InboxEntryCreateForm({
   }
 
   return (
-    <form className="grid w-full gap-3" onSubmit={handleSubmit}>
-      <section className="rounded-card border border-brand-200 bg-white/95 p-5 shadow-card md:p-6">
+    <form className="grid w-full gap-3 font-sans inbox-glass-text" onSubmit={handleSubmit}>
+      <section className="glass-card h-auto w-full max-w-full p-5 md:p-6">
         {heading ? (
           <div className="mb-4">
-            <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink-900">{heading}</h2>
+            <h2 className="heading-title text-center text-ink-900">{heading}</h2>
           </div>
         ) : null}
+        
         <div className="grid gap-4">
-          <label className={fieldLabelClass}>
-            <span>{t("inbox.titleLabel")}</span>
-            <textarea
-              maxLength={80}
-              rows={1}
-              disabled={submitting}
-              placeholder={t("inbox.titlePlaceholder")}
-              className={`${inputClass} scrollbar-brand min-h-[44px] max-h-[44px] resize-none overflow-x-hidden overflow-y-hidden`}
-              value={values.title}
-              onChange={(event) => onChange({ title: event.target.value })}
-            />
-          </label>
+          <textarea
+            maxLength={80}
+            rows={1}
+            disabled={submitting}
+            placeholder={t("inbox.titlePlaceholder")}
+            className={`${inputClass} min-h-[44px] max-h-[44px] resize-none overflow-hidden`}
+            value={values.title}
+            onChange={(event) => onChange({ title: event.target.value })}
+          />
 
-          <label className={fieldLabelClass}>
-            <span>{t("inbox.textLabel")}</span>
-            <textarea
-              disabled={submitting}
-              autoFocus
-              placeholder={t("inbox.textPlaceholder")}
-              className={`${textareaClass} scrollbar-brand min-h-[160px] max-h-[300px] resize-none overflow-y-scroll`}
-              value={values.textContent}
-              onChange={(event) => onChange({ textContent: event.target.value })}
-            />
-          </label>
+          <textarea
+            disabled={submitting}
+            autoFocus
+            placeholder={t("inbox.textPlaceholder")}
+            className={`${textareaClass} min-h-[160px] max-h-[160px] resize-none overflow-hidden`}
+            value={values.textContent}
+            onChange={(event) => onChange({ textContent: event.target.value })}
+          />
 
           <div
-            className={`${fieldLabelClass} gap-2`}
+            className="h-32"
             onDragEnter={() => setIsFileDropActive(true)}
             onDragOver={handleFileDragOver}
             onDragLeave={handleFileDragLeave}
             onDrop={handleFileDrop}
           >
-            <span>{t("inbox.filesLabel")}</span>
             {values.mediaFiles.length === 0 && (
               <>
                 <input
@@ -219,10 +212,10 @@ export function InboxEntryCreateForm({
                   onChange={(event) => appendMediaFiles(event.target.files ?? null)}
                 />
                 <div
-                  className={`rounded-control border-2 border-dashed px-4 py-5 text-center transition ${
+                  className={`h-full border-2 border-dashed rounded-2xl px-4 py-5 text-center transition flex items-center justify-center ${
                     isFileDropActive
-                      ? "border-brand-500 bg-brand-100 text-brand-800"
-                      : "border-brand-200 bg-brand-50 text-ink-700"
+                      ? "border-white/40 bg-[rgba(240,240,240,0.4)] text-ink-900"
+                      : "border-white/30 bg-[rgba(240,240,240,0.25)] text-ink-700"
                   }`}
                   role="button"
                   tabIndex={0}
@@ -242,18 +235,18 @@ export function InboxEntryCreateForm({
             )}
 
             {values.mediaFiles.length > 0 && (
-              <div className="mt-2 flex items-stretch gap-2">
-                <div className="min-w-0 flex-1 rounded-control border border-brand-200 bg-white p-2">
-                  <div className="grid max-h-44 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+              <div className="flex h-full items-stretch gap-2">
+                <div className="min-w-0 flex-1 glass-card p-2 overflow-hidden">
+                  <div className="h-full grid grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 auto-rows-min">
                     {values.mediaFiles.map((file, index) => {
                       const previewUrl = previewUrls[index];
                       return (
-                        <div key={`${file.name}-${file.lastModified}-${index}`} className="rounded-control border border-brand-200 bg-brand-50 p-2">
+                        <div key={`${file.name}-${file.lastModified}-${index}`} className="rounded-lg border border-brand-200 bg-white/90 p-2">
                           <div className="mb-1 flex items-start justify-between gap-2">
-                            <p className="truncate text-xs font-semibold text-ink-800">{file.name}</p>
+                            <p className="truncate text-xs font-semibold text-ink-900">{file.name}</p>
                             <button
                               type="button"
-                              className="shrink-0 rounded border border-brand-200 bg-white px-1 text-[10px] font-semibold text-ink-600 hover:bg-brand-100"
+                              className="shrink-0 rounded border border-rose-300 bg-white px-1 text-[10px] font-semibold text-rose-600 hover:bg-rose-50"
                               onClick={(event) => {
                                 event.preventDefault();
                                 event.stopPropagation();
@@ -264,7 +257,7 @@ export function InboxEntryCreateForm({
                               x
                             </button>
                           </div>
-                          <p className="text-[10px] text-ink-500">
+                          <p className="text-[10px] text-ink-600">
                             {(file.type || "application/octet-stream") + " · " + formatFileSize(file.size)}
                           </p>
 
@@ -288,7 +281,7 @@ export function InboxEntryCreateForm({
                   type="button"
                   aria-label={t("inbox.filesLabel")}
                   disabled={submitting}
-                  className="inline-flex w-12 shrink-0 items-center justify-center rounded-control border-2 border-dashed border-brand-200 bg-brand-50 text-2xl font-bold leading-none text-brand-700 transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex w-12 shrink-0 items-center justify-center rounded-2xl border-2 border-dashed border-white/30 bg-[rgba(240,240,240,0.25)] text-2xl font-bold leading-none text-ink-700 transition hover:border-white/40 hover:bg-[rgba(240,240,240,0.4)] disabled:cursor-not-allowed disabled:opacity-70"
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -312,7 +305,7 @@ export function InboxEntryCreateForm({
         </div>
       </section>
 
-      <section className="rounded-card border border-brand-200 bg-white/95 p-3 shadow-card">
+      <section className="glass-card h-auto w-full max-w-full overflow-visible p-3">
         <div className="grid grid-cols-4 gap-2 sm:flex sm:items-center sm:gap-2">
           <IconToggleButton
             label={t("icon.youtube")}
@@ -328,7 +321,7 @@ export function InboxEntryCreateForm({
             disabled={submitting}
             onClick={() => togglePrimaryOption("spotify")}
           >
-            <MusicalNoteIcon className="h-6 w-6" />
+            <img src={spotyIcon} alt="Spotify" className="h-6 w-6" />
           </IconToggleButton>
           <IconToggleButton
             label={t("icon.twitch")}
@@ -370,14 +363,6 @@ export function InboxEntryCreateForm({
           >
             <ChecklistIcon className="h-6 w-6" />
           </IconToggleButton>
-          <IconToggleButton
-            label={t("icon.survey")}
-            active={values.selectedPrimaryOption === "survey"}
-            disabled={submitting}
-            onClick={() => togglePrimaryOption("survey")}
-          >
-            <SurveyIcon className="h-6 w-6" />
-          </IconToggleButton>
 
           <div className="col-span-4 my-1 hidden h-11 w-px justify-self-center bg-brand-200 sm:mx-3 sm:my-0 sm:block" />
 
@@ -391,7 +376,7 @@ export function InboxEntryCreateForm({
               variant="primary"
               size="md"
               fullWidth
-              className="sm:min-w-[116px] sm:w-auto sm:px-5"
+              className="!text-[#F0F0F0] [--btn-text-hover:#F0F0F0] sm:min-w-[116px] sm:w-auto sm:px-5"
               disabled={submitting}
             >
               {submitting ? t("common.saving") : t("inbox.save")}

@@ -24,7 +24,7 @@ export function EntriesList({ entries, busy, onDeleteEntry, onDeleteResource }: 
             {entry.resources.length === 0 && <p className="m-0 text-sm text-ink-500">{t("entries.noResources")}</p>}
             {entry.resources.map((resource) => (
               <div key={resource.id} className="flex flex-wrap items-center gap-2 text-sm text-ink-700">
-                <span className="inline-flex rounded-full border border-brand-200 bg-white px-2 py-0.5 text-xs font-medium text-brand-700">
+                <span className="inline-flex rounded-full border border-brand-200 bg-white/25 backdrop-blur-sm px-2 py-0.5 text-xs font-medium text-brand-700">
                   {resource.type}
                 </span>
                 <span className="break-all">
