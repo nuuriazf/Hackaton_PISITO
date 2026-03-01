@@ -8,7 +8,7 @@ import type { AppLanguage, I18nKey } from "../../i18n/messages";
 import type { UpdatePasswordInput, UpdateUsernameInput } from "../../types/auth";
 import type { CreateEntryResourceInput, EntryItem } from "../../types/resource";
 import { readErrorMessage } from "../../utils/error";
-import LogoNombre from "../../assets/LogoNombre.svg";
+import LogoyTextoFunil from "../../assets/LogoyTextoFunil.svg";
 import {
   Cog6ToothIcon,
   InboxArrowDownIcon,
@@ -63,7 +63,7 @@ function footerButtonClass(active: boolean, withRightBorder: boolean) {
     withRightBorder ? "border-r border-brand-200" : "",
     active
       ? "bg-[#111827] text-white"
-      : "bg-white/85 text-ink-700 hover:bg-[linear-gradient(180deg,rgba(12,116,137,0)_0%,rgba(12,116,137,0.7)_100%)] hover:text-white"
+      : "bg-white/85 text-ink-700 hover:border-[rgba(255,255,255,0.3)] hover:bg-[rgba(170,170,170,0.52)] hover:text-ink-900 hover:backdrop-blur-[20px] hover:shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_6px_3px_rgba(255,255,255,0.3)]"
   ]
     .filter(Boolean)
     .join(" ");
@@ -93,7 +93,7 @@ const SECTION_TITLE_KEY_MAP: Record<Exclude<InboxSection, "inbox" | "profile">, 
   storage: "section.storage",
   relationshipGraph: "section.relationshipGraph"
 };
-const fonditoBackgroundUrl = new URL("../../assets/fondocentro.jpg", import.meta.url).href;
+const fondoCentroBackgroundUrl = new URL("../../assets/fondocentro.jpg", import.meta.url).href;
 
 function sectionFromPath(pathname: string): InboxSection {
   if (pathname === "/profile") {
@@ -405,21 +405,26 @@ export function ContentInbox({
   }
 
   return (
-    <section className="h-screen w-full overflow-hidden bg-[linear-gradient(180deg,#F0F0F0_0%,#E5E7DC_55%,#D7D9CE_100%)]">
-      <section className="relative h-full w-full overflow-hidden bg-[#F0F0F0]">
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-16 top-16 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${fonditoBackgroundUrl})` }}
-        aria-hidden="true"
-      />
+    <section
+      className="h-screen w-full overflow-hidden bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${fondoCentroBackgroundUrl})` }}
+    >
+      <section className="relative h-full w-full overflow-hidden bg-transparent">
       <header className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-brand-200 bg-white/90 px-4 backdrop-blur-sm sm:px-6">
-        <img
-          src={LogoNombre}
-          alt={t("app.name")}
-          className="h-[56px] w-[97px]"
-          draggable={false}
-          onDragStart={(event) => event.preventDefault()}
-        />
+        <button
+          type="button"
+          className="inline-flex items-center justify-center"
+          aria-label={t("footer.inbox")}
+          onClick={() => changeSection("inbox")}
+        >
+          <img
+            src={LogoyTextoFunil}
+            alt={t("app.name")}
+            className="h-[52.12px] w-[84px]"
+            draggable={false}
+            onDragStart={(event) => event.preventDefault()}
+          />
+        </button>
         <div className="relative flex items-center gap-2" ref={headerMenusRef}>
           <div className="relative">
             <button

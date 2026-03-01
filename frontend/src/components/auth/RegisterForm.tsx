@@ -63,7 +63,7 @@ export function RegisterForm({ submitting, error: _error, onSubmit }: RegisterFo
   }
 
   return (
-    <section className="relative flex min-h-[780px] w-full max-w-[390px] flex-col justify-center rounded-card border border-brand-200 bg-[#F9F9F7] p-5 shadow-card sm:min-h-[820px] sm:p-6 md:min-h-[844px] md:p-8">
+    <section className="relative flex h-[700px] w-full max-w-[890px] flex-col justify-center rounded-card border border-brand-200 bg-[#F9F9F7] p-5 shadow-card sm:h-[720px] sm:p-6 md:h-[740px] md:p-8">
       <form className="flex w-full flex-col" onSubmit={handleSubmit}>
         <div className="absolute left-5 top-5 sm:left-6 sm:top-6 md:left-8 md:top-8">
           <Link

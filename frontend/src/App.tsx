@@ -5,6 +5,7 @@ import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import { ContentInbox } from "./components/content/ContentInbox";
 import { appCenterClass, appShellClass, panelClass } from "./components/ui/styles";
+import FondocentroBackground from "./assets/fondocentro.jpg";
 import { useAuthSession } from "./hooks/useAuthSession";
 import { useI18n } from "./i18n/I18nProvider";
 import type { AuthCredentials } from "./types/auth";
@@ -16,7 +17,10 @@ function App() {
 
   const withAuthCardLayout = useCallback(
     (content: ReactNode) => (
-      <section className={appShellClass}>
+      <section
+        className={`${appShellClass} bg-cover bg-center bg-no-repeat`}
+        style={{ backgroundImage: `url(${FondocentroBackground})` }}
+      >
         <section className={appCenterClass}>{content}</section>
       </section>
     ),
@@ -46,7 +50,10 @@ function App() {
   if (auth.checkingSession) {
     return (
       <main className="min-h-screen">
-        <section className={appShellClass}>
+        <section
+          className={`${appShellClass} bg-cover bg-center bg-no-repeat`}
+          style={{ backgroundImage: `url(${FondocentroBackground})` }}
+        >
           <section className={appCenterClass}>
             <section className={`${panelClass} max-w-[420px] text-center`}>
               <p className="text-ink-700">{t("app.checkingSession")}</p>

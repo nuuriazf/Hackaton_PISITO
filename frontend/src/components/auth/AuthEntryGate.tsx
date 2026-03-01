@@ -3,14 +3,14 @@ import { buttonClass } from "../ui/Button";
 import { ArrowUpRightIcon } from "../ui/icons";
 import { useI18n } from "../../i18n/I18nProvider";
 import LogoBasico from "../../assets/LogoBasico.svg";
-import NombreSolo from "../../assets/NombreSolo.svg";
+import FunilTexto from "../../assets/FunilTexto.svg";
 import Vector from "../../assets/Vector.svg";
 
 export function AuthEntryGate() {
   const { t } = useI18n();
 
   return (
-    <section className="relative flex min-h-[780px] w-full max-w-[390px] flex-col justify-center overflow-hidden rounded-card border border-brand-200 bg-[#F9F9F7] p-5 shadow-card sm:min-h-[820px] sm:p-6 md:min-h-[844px] md:p-8">
+    <section className="relative flex h-[700px] w-full max-w-[890px] flex-col justify-center overflow-hidden rounded-card border border-brand-200 bg-[#F9F9F7] p-5 shadow-card sm:h-[720px] sm:p-6 md:h-[740px] md:p-8">
       <img
         src={Vector}
         alt=""
@@ -21,12 +21,24 @@ export function AuthEntryGate() {
       <div className="relative z-10 translate-y-[10px]">
         <div>
           <div className="flex justify-center">
-            <img src={LogoBasico} alt={t("app.name")} className="h-[129.02px] w-[78px]" />
+            <img
+              src={LogoBasico}
+              alt={t("app.name")}
+              className="h-[129.02px] w-[78px] select-none"
+              draggable={false}
+              onDragStart={(event) => event.preventDefault()}
+            />
           </div>
 
           <header className="mb-6 pt-[17px] text-center sm:mb-8">
             <div className="mb-5 flex justify-center sm:mb-6">
-              <img src={NombreSolo} alt={t("app.name")} className="h-[31.35px] w-[143px]" />
+              <img
+                src={FunilTexto}
+                alt={t("app.name")}
+                className="h-[26.87px] w-[85px] select-none"
+                draggable={false}
+                onDragStart={(event) => event.preventDefault()}
+              />
             </div>
 
             <p
