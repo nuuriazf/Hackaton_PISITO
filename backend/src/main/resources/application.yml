@@ -28,6 +28,11 @@ server:
   error:
     include-message: always
 
+logging:
+  level:
+    com.pisito.app.service.YouTubeVideoLinkService: DEBUG
+    com.pisito.app.service.TwitchVideoLinkService: DEBUG
+
 ollama:
   base-url: http://localhost:11434
   model: llama3.1:8b
@@ -37,6 +42,18 @@ spotify:
   auth-base-url: https://accounts.spotify.com
   client-id: ${SPOTIFY_CLIENT_ID:23f5df62147c459b9c6a47a9c6a33d6f}
   client-secret: ${SPOTIFY_CLIENT_SECRET:e316d0caf66b4f1daee11da8654f3e3e}
+youtube:
+  oembed-base-url: https://www.youtube.com/oembed
+  data-api-base-url: https://www.googleapis.com/youtube/v3/search
+  web-search-base-url: https://www.youtube.com/results
+  data-api-key: ${YOUTUBE_DATA_API_KEY:}
+twitch:
+  oembed-base-url: https://www.twitch.tv/oembed
+reddit:
+  search-base-url: https://www.reddit.com/search.json
+  user-agent: HackatonPisito/1.0 (by u/pisito_app)
+search:
+  web-base-url: https://duckduckgo.com/html/
 app:
   upload:
     dir: uploads

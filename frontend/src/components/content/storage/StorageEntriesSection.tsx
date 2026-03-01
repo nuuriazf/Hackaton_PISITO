@@ -19,6 +19,8 @@ import {
   PencilSquareIcon,
   StorageIcon,
   TextComponentIcon,
+  TwitchIcon,
+  YoutubeIcon,
   XMarkIcon
 } from "../../ui/icons";
 import { CreateFolderModal } from "./CreateFolderModal";
@@ -47,7 +49,7 @@ function buildEntrySearchableText(entry: EntryItem) {
 
 function buildEntryText(entry: EntryItem, emptyText: string) {
   const textResources = entry.resources
-    .filter((resource) => resource.type === "RAW")
+    .filter((resource) => resource.type === "RAW" || resource.type === "TEXT")
     .map((resource) => resource.textContent?.trim() ?? "")
     .filter(Boolean);
 
@@ -73,6 +75,262 @@ function getEntryLinks(entry: EntryItem) {
       title: resource.title?.trim() || resource.url!,
       url: resource.url!
     }));
+}
+
+const TWITCH_URL_PATTERN = /(?:https?:\/\/)?(?:www\.|m\.)?(?:twitch\.tv|clips\.twitch\.tv)\/[^\s<>"')]+/gi;
+
+type YouTubeVideoPreview = {
+  id: number;
+  title: string;
+  url: string;
+  videoId: string;
+  embedUrl: string;
+  isShort: boolean;
+};
+
+type TwitchVideoPreview = {
+  id: number;
+  title: string;
+  url: string;
+  embedUrl: string;
+  variant: "live" | "vod" | "clip";
+};
+
+type EntryDisplayCard = {
+  key: string;
+  entry: EntryItem;
+  youtubeVideo: YouTubeVideoPreview | null;
+  twitchVideo: TwitchVideoPreview | null;
+};
+
+function extractYoutubeVideoId(rawUrl: string): string | null {
+  try {
+    const normalizedUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    const parsedUrl = new URL(normalizedUrl);
+    const host = parsedUrl.hostname.toLowerCase().replace(/^www\./, "").replace(/^m\./, "");
+
+    if (host === "youtu.be") {
+      const firstPathSegment = parsedUrl.pathname.split("/").filter(Boolean)[0];
+      return firstPathSegment && /^[A-Za-z0-9_-]{11}$/.test(firstPathSegment) ? firstPathSegment : null;
+    }
+
+    if (host === "youtube.com" || host === "youtube-nocookie.com") {
+      if (parsedUrl.pathname === "/watch") {
+        const videoId = parsedUrl.searchParams.get("v");
+        return videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId) ? videoId : null;
+      }
+
+      const segments = parsedUrl.pathname.split("/").filter(Boolean);
+      if (segments.length >= 2 && ["shorts", "embed", "live"].includes(segments[0])) {
+        const videoId = segments[1];
+        return /^[A-Za-z0-9_-]{11}$/.test(videoId) ? videoId : null;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function isYoutubeShortUrl(rawUrl: string): boolean {
+  try {
+    const normalizedUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    const parsedUrl = new URL(normalizedUrl);
+    const host = parsedUrl.hostname.toLowerCase().replace(/^www\./, "").replace(/^m\./, "");
+
+    if (host !== "youtube.com" && host !== "youtube-nocookie.com") {
+      return false;
+    }
+
+    const segments = parsedUrl.pathname.split("/").filter(Boolean);
+    return segments.length >= 2 && segments[0] === "shorts";
+  } catch {
+    return false;
+  }
+}
+
+function getEntryYoutubeVideos(entry: EntryItem): YouTubeVideoPreview[] {
+  const videosById = new Map<string, YouTubeVideoPreview>();
+
+  for (const resource of entry.resources) {
+    if (resource.type !== "LINK" || !resource.url) {
+      continue;
+    }
+    const videoId = extractYoutubeVideoId(resource.url);
+    if (!videoId || videosById.has(videoId)) {
+      continue;
+    }
+
+    videosById.set(videoId, {
+      id: resource.id,
+      title: resource.title?.trim() || "YouTube",
+      url: resource.url,
+      videoId,
+      embedUrl: `https://www.youtube.com/embed/${videoId}`,
+      isShort: isYoutubeShortUrl(resource.url)
+    });
+  }
+
+  return Array.from(videosById.values());
+}
+
+function getTwitchEmbedParentHost() {
+  if (typeof window !== "undefined" && window.location.hostname) {
+    return window.location.hostname;
+  }
+  return "localhost";
+}
+
+function parseTwitchVideoPreview(rawUrl: string): Omit<TwitchVideoPreview, "id" | "title" | "url"> | null {
+  try {
+    const normalizedUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    const parsedUrl = new URL(normalizedUrl);
+    const host = parsedUrl.hostname.toLowerCase().replace(/^www\./, "").replace(/^m\./, "");
+    const segments = parsedUrl.pathname.split("/").filter(Boolean);
+    const parent = encodeURIComponent(getTwitchEmbedParentHost());
+
+    if (host === "clips.twitch.tv" && segments.length >= 1) {
+      const slug = segments[0];
+      if (!/^[A-Za-z0-9_-]{3,}$/.test(slug)) {
+        return null;
+      }
+      return {
+        variant: "clip",
+        embedUrl: `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=${parent}&autoplay=false`
+      };
+    }
+
+    if (host !== "twitch.tv" || segments.length === 0) {
+      return null;
+    }
+
+    const first = segments[0].toLowerCase();
+    if (first === "videos" && segments.length >= 2) {
+      const videoId = segments[1];
+      if (!/^\d+$/.test(videoId)) {
+        return null;
+      }
+      return {
+        variant: "vod",
+        embedUrl: `https://player.twitch.tv/?video=v${encodeURIComponent(videoId)}&parent=${parent}&autoplay=false`
+      };
+    }
+
+    if (first === "clip" && segments.length >= 2) {
+      const slug = segments[1];
+      if (!/^[A-Za-z0-9_-]{3,}$/.test(slug)) {
+        return null;
+      }
+      return {
+        variant: "clip",
+        embedUrl: `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=${parent}&autoplay=false`
+      };
+    }
+
+    if (!/^[A-Za-z0-9_]{2,25}$/.test(first)) {
+      return null;
+    }
+
+    const reserved = new Set([
+      "directory",
+      "downloads",
+      "jobs",
+      "settings",
+      "subscriptions",
+      "turbo",
+      "wallet",
+      "friends",
+      "inventory",
+      "messages",
+      "prime",
+      "store",
+      "search",
+      "videos",
+      "clip",
+      "moderator"
+    ]);
+    if (reserved.has(first)) {
+      return null;
+    }
+
+    return {
+      variant: "live",
+      embedUrl: `https://player.twitch.tv/?channel=${encodeURIComponent(first)}&parent=${parent}&autoplay=false`
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getTwitchVariantBadgeConfig(variant: TwitchVideoPreview["variant"]) {
+  switch (variant) {
+    case "live":
+      return {
+        labelKey: "storage.twitchLive" as const,
+        className:
+          "inline-flex w-fit rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-700"
+      };
+    case "vod":
+      return {
+        labelKey: "storage.twitchVod" as const,
+        className:
+          "inline-flex w-fit rounded-full border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-indigo-700"
+      };
+    case "clip":
+    default:
+      return {
+        labelKey: "storage.twitchClip" as const,
+        className:
+          "inline-flex w-fit rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-700"
+      };
+  }
+}
+
+function getEntryTwitchVideos(entry: EntryItem): TwitchVideoPreview[] {
+  const videosByEmbed = new Map<string, TwitchVideoPreview>();
+
+  for (const resource of entry.resources) {
+    if (resource.type === "LINK" && resource.url) {
+      const parsed = parseTwitchVideoPreview(resource.url);
+      if (!parsed || videosByEmbed.has(parsed.embedUrl)) {
+        continue;
+      }
+
+      videosByEmbed.set(parsed.embedUrl, {
+        id: resource.id,
+        title: resource.title?.trim() || "Twitch",
+        url: resource.url,
+        embedUrl: parsed.embedUrl,
+        variant: parsed.variant
+      });
+      continue;
+    }
+
+    if ((resource.type === "RAW" || resource.type === "TEXT") && resource.textContent) {
+      const matches = resource.textContent.match(TWITCH_URL_PATTERN);
+      if (!matches) {
+        continue;
+      }
+
+      for (const candidateUrl of matches) {
+        const parsed = parseTwitchVideoPreview(candidateUrl);
+        if (!parsed || videosByEmbed.has(parsed.embedUrl)) {
+          continue;
+        }
+
+        videosByEmbed.set(parsed.embedUrl, {
+          id: resource.id,
+          title: "Twitch",
+          url: /^https?:\/\//i.test(candidateUrl) ? candidateUrl : `https://${candidateUrl}`,
+          embedUrl: parsed.embedUrl,
+          variant: parsed.variant
+        });
+      }
+    }
+  }
+
+  return Array.from(videosByEmbed.values());
 }
 
 export function StorageEntriesSection({
@@ -140,12 +398,27 @@ export function StorageEntriesSection({
     () => (selectedEntry ? getEntryLinks(selectedEntry) : []),
     [selectedEntry]
   );
+  const selectedEntryYoutubeVideos = useMemo(
+    () => (selectedEntry ? getEntryYoutubeVideos(selectedEntry) : []),
+    [selectedEntry]
+  );
+  const selectedEntryTwitchVideos = useMemo(
+    () => (selectedEntry ? getEntryTwitchVideos(selectedEntry) : []),
+    [selectedEntry]
+  );
+  const selectedEntryOtherLinks = useMemo(
+    () =>
+      selectedEntryLinks.filter(
+        (link) => !extractYoutubeVideoId(link.url) && !parseTwitchVideoPreview(link.url)
+      ),
+    [selectedEntryLinks]
+  );
 
   const selectedTextResource = useMemo(() => {
     if (!selectedEntry) {
       return null;
     }
-    return selectedEntry.resources.find((resource) => resource.type === "RAW") ?? null;
+    return selectedEntry.resources.find((resource) => resource.type === "RAW" || resource.type === "TEXT") ?? null;
   }, [selectedEntry]);
 
   const selectedFolderEntries = useMemo(() => {
@@ -538,6 +811,75 @@ export function StorageEntriesSection({
   }
 
   const showingEntries = foldersViewActive && selectedFolder ? selectedFolderEntries : filteredEntries;
+  const displayCards = useMemo<EntryDisplayCard[]>(() => {
+    const cards: EntryDisplayCard[] = [];
+
+    for (const entry of showingEntries) {
+      const youtubeVideos = getEntryYoutubeVideos(entry);
+      const twitchVideos = getEntryTwitchVideos(entry);
+      const hasYoutubeVideos = youtubeVideos.length > 0;
+      const hasTwitchVideos = twitchVideos.length > 0;
+
+      if (entry.flag === "YOUTUBE" && hasYoutubeVideos) {
+        youtubeVideos.forEach((video, index) => {
+          cards.push({
+            key: `${entry.id}-youtube-${video.videoId}-${index}`,
+            entry,
+            youtubeVideo: video,
+            twitchVideo: null
+          });
+        });
+        continue;
+      }
+
+      if (entry.flag === "TWITCH" && hasTwitchVideos) {
+        twitchVideos.forEach((video, index) => {
+          cards.push({
+            key: `${entry.id}-twitch-${video.variant}-${index}`,
+            entry,
+            youtubeVideo: null,
+            twitchVideo: video
+          });
+        });
+        continue;
+      }
+
+      if (hasYoutubeVideos) {
+        youtubeVideos.forEach((video, index) => {
+          cards.push({
+            key: `${entry.id}-youtube-${video.videoId}-${index}`,
+            entry,
+            youtubeVideo: video,
+            twitchVideo: null
+          });
+        });
+      }
+
+      if (hasTwitchVideos) {
+        twitchVideos.forEach((video, index) => {
+          cards.push({
+            key: `${entry.id}-twitch-${video.variant}-${index}`,
+            entry,
+            youtubeVideo: null,
+            twitchVideo: video
+          });
+        });
+      }
+
+      if (hasYoutubeVideos || hasTwitchVideos) {
+        continue;
+      }
+
+      cards.push({
+        key: String(entry.id),
+        entry,
+        youtubeVideo: null,
+        twitchVideo: null
+      });
+    }
+
+    return cards;
+  }, [showingEntries]);
 
   return (
     <section className="grid gap-4">
@@ -644,7 +986,7 @@ export function StorageEntriesSection({
         <section className="rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
           <p className={errorTextClass}>{t("common.errorPrefix", { message: error })}</p>
         </section>
-      ) : showingEntries.length === 0 ? (
+      ) : displayCards.length === 0 ? (
         <section className="rounded-card border border-brand-200 bg-white p-4 shadow-card md:p-5">
           <p className="text-sm font-medium text-ink-600">
             {searchValue.trim() ? t("storage.emptyFiltered") : t("storage.empty")}
@@ -652,15 +994,23 @@ export function StorageEntriesSection({
         </section>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {showingEntries.map((entry) => {
+          <div className="columns-1 gap-3 md:columns-2">
+            {displayCards.map((card) => {
+              const { entry, youtubeVideo, twitchVideo } = card;
               const selected = selectedEntryId === entry.id;
+              const isYoutubeCard = youtubeVideo !== null;
+              const isTwitchCard = twitchVideo !== null;
+              const cardTitle = isYoutubeCard
+                ? youtubeVideo!.title
+                : isTwitchCard
+                  ? twitchVideo!.title
+                  : entry.title;
 
               return (
                 <button
-                  key={entry.id}
+                  key={card.key}
                   type="button"
-                  className={`relative grid gap-2 rounded-card border bg-white p-4 text-left shadow-card transition ${
+                  className={`relative mb-3 inline-block w-full break-inside-avoid rounded-card border bg-white p-4 text-left shadow-card transition ${
                     selected
                       ? "border-brand-500 ring-2 ring-brand-100"
                       : "border-brand-200 hover:bg-brand-50"
@@ -668,13 +1018,69 @@ export function StorageEntriesSection({
                   onClick={() => setSelectedEntryId(entry.id)}
                 >
                   <div className="pr-12">
-                    <h3 className="break-words text-base font-extrabold leading-snug text-ink-900">{entry.title}</h3>
+                    <h3 className="break-words text-base font-extrabold leading-snug text-ink-900">{cardTitle}</h3>
                   </div>
-                  <TextComponentIcon className="pointer-events-none absolute right-4 top-4 h-7 w-7 text-brand-600" />
+                  {isYoutubeCard && youtubeVideo!.isShort && (
+                    <span className="inline-flex w-fit rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-700">
+                      Shorts
+                    </span>
+                  )}
+                  {isTwitchCard && (
+                    (() => {
+                      const badge = getTwitchVariantBadgeConfig(twitchVideo!.variant);
+                      return <span className={badge.className}>{t(badge.labelKey)}</span>;
+                    })()
+                  )}
+                  {isYoutubeCard ? (
+                    <YoutubeIcon className="pointer-events-none absolute right-4 top-4 h-7 w-7 text-rose-600" />
+                  ) : isTwitchCard ? (
+                    <TwitchIcon className="pointer-events-none absolute right-4 top-4 h-7 w-7 text-violet-600" />
+                  ) : (
+                    <TextComponentIcon className="pointer-events-none absolute right-4 top-4 h-7 w-7 text-brand-600" />
+                  )}
                   <div className="mt-2 h-px w-full bg-brand-200" />
-                  <p className="break-words text-sm text-ink-700 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-                    {buildEntryText(entry, t("entries.noContent"))}
-                  </p>
+                  {isYoutubeCard ? (
+                    <div className={youtubeVideo!.isShort ? "flex justify-center" : ""}>
+                      <div
+                        className={`overflow-hidden rounded-control border border-brand-200 bg-brand-50 ${
+                          youtubeVideo!.isShort ? "w-full max-w-[220px]" : "w-full"
+                        }`}
+                        style={youtubeVideo!.isShort ? { aspectRatio: "9 / 16" } : undefined}
+                      >
+                        <iframe
+                          className={youtubeVideo!.isShort ? "h-full w-full" : "h-40 w-full"}
+                          src={youtubeVideo!.embedUrl}
+                          title={youtubeVideo!.title}
+                          loading="lazy"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    </div>
+                  ) : isTwitchCard ? (
+                    <div
+                      className={`overflow-hidden rounded-control border ${
+                        twitchVideo!.variant === "live"
+                          ? "border-rose-200 bg-rose-50"
+                          : twitchVideo!.variant === "vod"
+                            ? "border-indigo-200 bg-indigo-50"
+                            : "border-amber-200 bg-amber-50"
+                      }`}
+                    >
+                      <iframe
+                        className="h-40 w-full"
+                        src={twitchVideo!.embedUrl}
+                        title={twitchVideo!.title}
+                        loading="lazy"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <p className="break-words text-sm text-ink-700 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                      {buildEntryText(entry, t("entries.noContent"))}
+                    </p>
+                  )}
                 </button>
               );
             })}
@@ -883,13 +1289,101 @@ export function StorageEntriesSection({
                     )}
                   </article>
 
-                  {selectedEntryLinks.length > 0 && (
+                  {selectedEntryYoutubeVideos.length > 0 && (
                     <article className="rounded-control border border-brand-200 bg-white p-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                        Spotify / Links
+                        {t("storage.youtubeVideos")}
+                      </p>
+                      <div className="mt-2 grid gap-3">
+                        {selectedEntryYoutubeVideos.map((video) => (
+                          <div key={`${video.id}-${video.videoId}`} className="grid gap-2">
+                            {video.isShort && (
+                              <span className="inline-flex w-fit rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-700">
+                                Shorts
+                              </span>
+                            )}
+                            <div className={video.isShort ? "flex justify-center" : ""}>
+                              <div
+                                className={`overflow-hidden rounded-control border border-brand-200 bg-brand-50 ${
+                                  video.isShort ? "w-full max-w-[250px]" : "w-full"
+                                }`}
+                                style={video.isShort ? { aspectRatio: "9 / 16" } : undefined}
+                              >
+                                <iframe
+                                  className={video.isShort ? "h-full w-full" : "h-44 w-full"}
+                                  src={video.embedUrl}
+                                  title={video.title}
+                                  loading="lazy"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                  allowFullScreen
+                                />
+                              </div>
+                            </div>
+                            <a
+                              href={video.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="break-all text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800"
+                            >
+                              {video.title}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                  )}
+
+                  {selectedEntryTwitchVideos.length > 0 && (
+                    <article className="rounded-control border border-violet-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {t("storage.twitchVideos")}
+                      </p>
+                      <div className="mt-2 grid gap-3">
+                        {selectedEntryTwitchVideos.map((video) => (
+                          <div key={`${video.id}-${video.embedUrl}`} className="grid gap-2">
+                            {(() => {
+                              const badge = getTwitchVariantBadgeConfig(video.variant);
+                              return <span className={badge.className}>{t(badge.labelKey)}</span>;
+                            })()}
+                            <div
+                              className={`overflow-hidden rounded-control border ${
+                                video.variant === "live"
+                                  ? "border-rose-200 bg-rose-50"
+                                  : video.variant === "vod"
+                                    ? "border-indigo-200 bg-indigo-50"
+                                    : "border-amber-200 bg-amber-50"
+                              }`}
+                            >
+                              <iframe
+                                className="h-44 w-full"
+                                src={video.embedUrl}
+                                title={video.title}
+                                loading="lazy"
+                                allow="autoplay; fullscreen; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                            <a
+                              href={video.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="break-all text-sm font-semibold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:text-violet-800"
+                            >
+                              {video.title}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                  )}
+
+                  {selectedEntryOtherLinks.length > 0 && (
+                    <article className="rounded-control border border-brand-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {t("storage.detailLinks")}
                       </p>
                       <div className="mt-2 grid gap-2">
-                        {selectedEntryLinks.map((link) => {
+                        {selectedEntryOtherLinks.map((link) => {
                           return (
                             <a
                               key={link.id}

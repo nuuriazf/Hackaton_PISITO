@@ -140,7 +140,7 @@ function App() {
         />
 
         <Route
-          path="/storage"
+          path="/library"
           element={
             auth.authUser ? (
               <ContentInbox

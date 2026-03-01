@@ -23,10 +23,16 @@ async function parseErrorMessage(response: Response): Promise<string> {
     }
     if (payload && typeof payload === "object") {
       if ("message" in payload && typeof payload.message === "string" && payload.message.trim()) {
-        return payload.message;
+        const message = payload.message.trim();
+        if (message.toLowerCase() !== "no message available") {
+          return message;
+        }
       }
       if ("error" in payload && typeof payload.error === "string" && payload.error.trim()) {
-        return payload.error;
+        const error = payload.error.trim();
+        if (error.toLowerCase() !== "no message available") {
+          return error;
+        }
       }
     }
     return fallbackMessage;

@@ -101,7 +101,7 @@ public class FolderService {
     }
 
     private Entry getEntryOrThrow(Long userId, Long entryId) {
-        return entryRepository.findByIdAndOwnerId(entryId, userId)
+        return entryRepository.findByIdAndUserId(entryId, userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
     }
 

@@ -1,6 +1,6 @@
 export type Resource = {
   id: number;
-  type: "RAW" | "LINK" | "MEDIA";
+  type: "TEXT" | "RAW" | "LINK" | "MEDIA";
   title?: string | null;
   textContent?: string | null;
   url?: string | null;

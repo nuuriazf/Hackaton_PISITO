@@ -1,4 +1,4 @@
-export type ResourceType = "RAW" | "LINK" | "MEDIA";
+export type ResourceType = "TEXT" | "RAW" | "LINK" | "MEDIA";
 export type EntryFlag =
   | "RAW"
   | "YOUTUBE"
@@ -24,6 +24,7 @@ export type ResourceItem = {
 export type EntryItem = {
   id: number;
   title: string;
+  flag: EntryFlag | null;
   resources: ResourceItem[];
   createdAt: string;
   updatedAt: string;

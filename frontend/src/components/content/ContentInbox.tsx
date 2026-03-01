@@ -101,7 +101,7 @@ function buildMediaStorageKey(fileName: string) {
 
 const SECTION_PATH_MAP: Record<InboxSection, string> = {
   explore: "/explore",
-  storage: "/storage",
+  storage: "/library",
   inbox: "/inbox",
   relationshipGraph: "/relationship-graph",
   profile: "/profile"
@@ -122,7 +122,7 @@ function sectionFromPath(pathname: string): InboxSection {
     return "explore";
   }
 
-  if (pathname === "/storage") {
+  if (pathname === "/library") {
     return "storage";
   }
 
@@ -275,12 +275,26 @@ export function ContentInbox({
 
   async function handleCreateInboxEntry() {
     const title = inboxEntryForm.title.trim();
+    const textContent = inboxEntryForm.textContent.trim();
+    const activeFlag = resolveEntryFlag(inboxEntryForm);
+
+    if (activeFlag === "YOUTUBE") {
+      if (!textContent) {
+        setInboxError(t("entries.youtubeRequired"));
+        return;
+      }
+    }
+    if (activeFlag === "TWITCH") {
+      if (!textContent) {
+        setInboxError(t("entries.twitchRequired"));
+        return;
+      }
+    }
 
     const resources: CreateEntryResourceInput[] = [];
-    const textContent = inboxEntryForm.textContent.trim();
     if (textContent) {
       resources.push({
-        type: "RAW",
+        type: "TEXT",
         textContent
       });
     }
@@ -299,7 +313,6 @@ export function ContentInbox({
     try {
       setInboxSubmitting(true);
       resetInboxFeedback();
-      const activeFlag = resolveEntryFlag(inboxEntryForm);
 
       const createdEntry = await createEntry({
         title: title || undefined,

@@ -15,6 +15,7 @@ import com.pisito.app.model.FlagEnum;
 import com.pisito.app.model.LinkResource;
 import com.pisito.app.model.MediaResource;
 import com.pisito.app.model.Resource;
+import com.pisito.app.model.ResourceType;
 import com.pisito.app.model.TextResource;
 import com.pisito.app.repository.EntryRepository;
 import com.pisito.app.repository.ResourceRepository;
@@ -27,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class EntryService {
@@ -38,6 +41,8 @@ public class EntryService {
     private final ResourceRepository resourceRepository;
     private final OllamaTitleService ollamaTitleService;
     private final SpotifySongLinkService spotifySongLinkService;
+    private final YouTubeVideoLinkService youTubeVideoLinkService;
+    private final TwitchVideoLinkService twitchVideoLinkService;
     private final UserRepository userRepository;
 
     public EntryService(
@@ -45,12 +50,16 @@ public class EntryService {
         ResourceRepository resourceRepository,
         OllamaTitleService ollamaTitleService,
         SpotifySongLinkService spotifySongLinkService,
+        YouTubeVideoLinkService youTubeVideoLinkService,
+        TwitchVideoLinkService twitchVideoLinkService,
         UserRepository userRepository
     ) {
         this.entryRepository = entryRepository;
         this.resourceRepository = resourceRepository;
         this.ollamaTitleService = ollamaTitleService;
         this.spotifySongLinkService = spotifySongLinkService;
+        this.youTubeVideoLinkService = youTubeVideoLinkService;
+        this.twitchVideoLinkService = twitchVideoLinkService;
         this.userRepository = userRepository;
     }
 
@@ -68,7 +77,29 @@ public class EntryService {
 
     @Transactional
     public EntryResponse createEntry(Long userId, CreateNoteRequest request) {
+        try {
+            return createEntryInternal(userId, request);
+        } catch (ResponseStatusException knownError) {
+            throw knownError;
+        } catch (Exception unexpectedError) {
+            log.error(
+                "createEntry unexpected error userId={} flag={}",
+                userId,
+                request == null ? null : request.getFlag(),
+                unexpectedError
+            );
+            throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "createEntry failed: " + unexpectedError.getClass().getSimpleName(),
+                unexpectedError
+            );
+        }
+    }
+
+    private EntryResponse createEntryInternal(Long userId, CreateNoteRequest request) {
         AppUser user = getUserOrThrow(userId);
+        boolean youtubeFlag = request.getFlag() == FlagEnum.YOUTUBE;
+        boolean twitchFlag = request.getFlag() == FlagEnum.TWITCH;
 
         Entry entry = new Entry();
         entry.setUser(user);
@@ -77,6 +108,20 @@ public class EntryService {
         String firstTextContent = null;
         StringBuilder allTextContent = new StringBuilder();
         for (CreateEntryResourceRequest resourceRequest : request.getResources()) {
+            if ((youtubeFlag || twitchFlag) && isTextResourceType(resourceRequest.getType())) {
+                String rawText = trimOrNull(resourceRequest.getTextContent());
+                if (firstTextContent == null && StringUtils.hasText(rawText)) {
+                    firstTextContent = rawText;
+                }
+                if (StringUtils.hasText(rawText)) {
+                    if (!allTextContent.isEmpty()) {
+                        allTextContent.append('\n');
+                    }
+                    allTextContent.append(rawText);
+                }
+                continue;
+            }
+
             Resource resource = buildResource(resourceRequest);
             entry.addResource(resource);
             if (firstTextContent == null
@@ -90,6 +135,74 @@ public class EntryService {
                     allTextContent.append('\n');
                 }
                 allTextContent.append(textResource.getTextContent().trim());
+            }
+        }
+
+        if (youtubeFlag) {
+            List<YouTubeVideoLinkService.YouTubeVideoLink> youtubeLinks =
+                new ArrayList<>(youTubeVideoLinkService.resolveVideoLinks(allTextContent.toString()));
+            if (youtubeLinks.isEmpty()) {
+                youTubeVideoLinkService.searchFirstVideoByQuery(allTextContent.toString())
+                    .ifPresent(youtubeLinks::add);
+            }
+            if (youtubeLinks.isEmpty()) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No YouTube video found from text or links"
+                );
+            }
+
+            for (YouTubeVideoLinkService.YouTubeVideoLink link : youtubeLinks) {
+                LinkResource youtubeResource = new LinkResource();
+                youtubeResource.setTitle(link.title());
+                youtubeResource.setUrl(link.videoUrl());
+                entry.addResource(youtubeResource);
+            }
+
+            String youtubeContext = youtubeLinks.stream()
+                .map(YouTubeVideoLinkService.YouTubeVideoLink::title)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.joining("\n"));
+            if (StringUtils.hasText(youtubeContext)) {
+                if (!allTextContent.isEmpty()) {
+                    allTextContent.append('\n');
+                }
+                allTextContent.append(youtubeContext);
+                firstTextContent = youtubeLinks.get(0).title();
+            }
+        }
+
+        if (twitchFlag) {
+            List<TwitchVideoLinkService.TwitchVideoLink> twitchLinks =
+                new ArrayList<>(twitchVideoLinkService.resolveLinks(allTextContent.toString()));
+            if (twitchLinks.isEmpty()) {
+                twitchVideoLinkService.searchFirstLinkByQuery(allTextContent.toString())
+                    .ifPresent(twitchLinks::add);
+            }
+            if (twitchLinks.isEmpty()) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No Twitch link found from text or links"
+                );
+            }
+
+            for (TwitchVideoLinkService.TwitchVideoLink link : twitchLinks) {
+                LinkResource twitchResource = new LinkResource();
+                twitchResource.setTitle(link.title());
+                twitchResource.setUrl(link.url());
+                entry.addResource(twitchResource);
+            }
+
+            String twitchContext = twitchLinks.stream()
+                .map(TwitchVideoLinkService.TwitchVideoLink::title)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.joining("\n"));
+            if (StringUtils.hasText(twitchContext)) {
+                if (!allTextContent.isEmpty()) {
+                    allTextContent.append('\n');
+                }
+                allTextContent.append(twitchContext);
+                firstTextContent = twitchLinks.get(0).title();
             }
         }
 
@@ -176,7 +289,7 @@ public class EntryService {
         Resource resource = getResourceOrThrow(resourceId);
         Entry parent = resource.getEntry();
 
-        if (!parent.getId().equals(entryId) || !parent.getOwner().getId().equals(userId)) {
+        if (!parent.getId().equals(entryId) || !parent.getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found in entry");
         }
 
@@ -219,7 +332,7 @@ public class EntryService {
         }
 
         return switch (request.getType()) {
-            case RAW -> {
+            case RAW, TEXT -> {
                 TextResource resource = new TextResource();
                 resource.setTitle(trimOrNull(request.getTitle()));
                 resource.setTextContent(trimRequired(request.getTextContent(), "textContent is required for RAW"));
@@ -265,6 +378,7 @@ public class EntryService {
         return new EntryResponse(
             entry.getId(),
             entry.getTitle(),
+            entry.getFlag(),
             resources,
             entry.getCreateDate(),
             entry.getUpdateDate()
@@ -314,5 +428,9 @@ public class EntryService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage);
         }
         return value.trim();
+    }
+
+    private static boolean isTextResourceType(ResourceType type) {
+        return type == ResourceType.RAW || type == ResourceType.TEXT;
     }
 }
